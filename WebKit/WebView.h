@@ -30,18 +30,31 @@
 #include <Foundation/Foundation.h>
 #include <AppKit/AppKit.h>
 
+// JavaScript evaluation completion handler
+typedef void (^WebViewJavaScriptCompletionHandler)(NSString* result, NSError* error);
+
 // WebView interface
 @interface WebView : NSView
 
+// Loading methods
 - (void)loadRequest:(NSURLRequest*)request;
 - (void)loadHTMLString:(NSString*)string baseURL:(NSURL*)baseURL;
+- (void)loadURL:(NSString*)url;
+
+// Navigation methods
 - (void)reload;
 - (void)stopLoading;
 - (void)goBack;
 - (void)goForward;
 - (BOOL)canGoBack;
 - (BOOL)canGoForward;
+
+// JavaScript execution
 - (NSString*)stringByEvaluatingJavaScriptFromString:(NSString*)script;
+- (void)evaluateJavaScript:(NSString*)script 
+           completionHandler:(WebViewJavaScriptCompletionHandler)completionHandler;
+
+// Information methods
 - (NSURL*)mainFrameURL;
 - (NSString*)mainFrameTitle;
 
