@@ -58,6 +58,12 @@ typedef void (^WebViewJavaScriptCompletionHandler)(NSString* result, NSError* er
 - (NSURL*)mainFrameURL;
 - (NSString*)mainFrameTitle;
 
+// Internal callback methods (used by C++ code)
+- (void)browserCreated:(void*)browser;
+- (void)loadingStarted;
+- (void)loadingEnded;
+- (void)loadingFailed:(NSString*)error;
+
 @end
 
 #endif

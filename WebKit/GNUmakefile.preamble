@@ -4,12 +4,27 @@
 
 # CEF paths - adjust these based on your CEF installation
 CEF_PATH ?= $(CURDIR)/cef_build/cef-project
-CEF_LIBCEF_DLL_WRAPPER = $(CEF_PATH)/build/libcef_dll_wrapper/Release/libcef_dll_wrapper.a
-CEF_LIB = $(CEF_PATH)/build/Release/libcef.a
-CEF_INCLUDE = $(CEF_PATH)
+CEF_PROJECT_PATH = $(CEF_PATH)
+
+# CEF binary is in third_party/cef/cef_binary_* directory
+# Use wildcard to find it (handles version number changes)
+CEF_BINARY_PATH = $(wildcard $(CEF_PATH)/third_party/cef/cef_binary_*)
+CEF_INCLUDE = $(CEF_BINARY_PATH)/include
+
+# Check if CEF libraries have been built
+CEF_LIB_DIR = $(wildcard $(CEF_PATH)/third_party/cef/cef_binary_*/Release)
+CEF_DLL_WRAPPER_DIR = $(wildcard $(CEF_PATH)/third_party/cef/cef_binary_*/libcef_dll/Release)
 
 # Additional flags to pass to the preprocessor
-ADDITIONAL_CPPFLAGS += -I$(CEF_INCLUDE) -I$(CEF_INCLUDE)/.. -DUSING_CEF_SHARED
+# Check if CEF headers exist
+# CEF headers use relative includes like "include/cef_base.h", so we need the binary root in include path
+ifneq ($(wildcard $(CEF_INCLUDE)/cef_app.h),)
+  ADDITIONAL_CPPFLAGS += -I$(CEF_BINARY_PATH) -DUSING_CEF_SHARED -DHAVE_CEF=1
+else
+  # Use stubs if CEF not available
+  ADDITIONAL_CPPFLAGS += -I$(CURDIR) -DUSING_CEF_SHARED
+  $(warning CEF headers not found at $(CEF_INCLUDE). Using stubs for compilation.)
+endif
 
 ADDITIONAL_OBJCCFLAGS += -std=c++17 -fPIC
 
@@ -20,16 +35,17 @@ ADDITIONAL_OBJCFLAGS +=
 ADDITIONAL_CFLAGS += 
 
 # Additional flags to pass to the linker
-ADDITIONAL_LDFLAGS += -L$(CEF_PATH)/build/Release \
-	-L$(CEF_PATH)/build/libcef_dll_wrapper/Release \
-	-lcef -lcef_dll_wrapper
+# Only link CEF libraries if they have been built
+ifneq ($(wildcard $(CEF_LIB_DIR)/libcef.a),)
+  ADDITIONAL_LDFLAGS += -L$(CEF_LIB_DIR) -L$(CEF_DLL_WRAPPER_DIR) -lcef -lcef_dll_wrapper
+  ADDITIONAL_LIB_DIRS += $(CEF_LIB_DIR) $(CEF_DLL_WRAPPER_DIR)
+else
+  # CEF not built yet - only include headers for compilation
+  $(warning CEF libraries not found at $(CEF_LIB_DIR). WebView will compile header-only. Build CEF with: cd $(CEF_PATH)/build && cmake .. && make)
+endif
 
 # Additional include directories the compiler should search
-ADDITIONAL_INCLUDE_DIRS += $(CEF_INCLUDE)
-
-# Additional library directories the linker should search
-ADDITIONAL_LIB_DIRS += $(CEF_PATH)/build/Release \
-	$(CEF_PATH)/build/libcef_dll_wrapper/Release
+ADDITIONAL_INCLUDE_DIRS += $(CEF_BINARY_PATH)
 
 # Additional GUI libraries to link
 ADDITIONAL_GUI_LIBS += -lstdc++ -lpthread -lm -ldl
