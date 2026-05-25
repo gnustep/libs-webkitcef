@@ -1,119 +1,103 @@
-// Minimal CEF header stubs for compilation without full CEF
-// This allows WebView to compile and function in header-only mode
+// Minimal CEF header stubs for compilation without full CEF.
 
 #ifndef CEF_STUBS_H
 #define CEF_STUBS_H
 
 #include <string>
-#include <memory>
+#include <vector>
 
-// Minimal CEF stub types
 typedef void* CefWindowHandle;
 typedef int cef_cursor_type_t;
 typedef int cef_log_severity_t;
 typedef void* CefCursorHandle;
+typedef int TransitionType;
+typedef int ErrorCode;
 
-class CefCursorInfo {};
-class CefRect {
- public:
-  CefRect() {}
-  CefRect(int x, int y, int width, int height) {}
-};
-
-class CefString {
- public:
-  CefString() {}
-  CefString(const std::string& str) {}
-  std::string ToString() const { return ""; }
-  const char* c_str() const { return ""; }
-};
+class CefApp;
+class CefBrowser;
+class CefBrowserHost;
+class CefBrowserProcessHandler;
+class CefClient;
+class CefCommand;
+class CefCommandLine;
+class CefDictionaryValue;
+class CefDisplayHandler;
+class CefFrame;
+class CefLifeSpanHandler;
+class CefLoadHandler;
+class CefRequestContext;
+class CefV8Value;
 
 template <class T>
 class CefRefPtr {
  public:
-  CefRefPtr() {}
-  CefRefPtr(T* ptr) {}
-  T* get() { return nullptr; }
-  T* operator->() { return nullptr; }
-  bool operator!() const { return true; }
-  operator bool() const { return false; }
-};
+  CefRefPtr() : ptr_(NULL) {}
+  CefRefPtr(T* ptr) : ptr_(ptr) {}
+  T* get() const { return ptr_; }
+  T* operator->() const { return ptr_; }
+  bool operator!() const { return ptr_ == NULL; }
+  operator bool() const { return ptr_ != NULL; }
+  CefRefPtr<T>& operator=(T* ptr) { ptr_ = ptr; return *this; }
 
-template <class T>
-class scoped_refptr {
- public:
-  scoped_refptr() {}
-  scoped_refptr(T* ptr) {}
-  T* get() { return nullptr; }
-  T* operator->() { return nullptr; }
-  bool operator!() const { return true; }
-  operator bool() const { return false; }
+ private:
+  T* ptr_;
 };
 
 #define IMPLEMENT_REFCOUNTING(ClassName)
 #define DISALLOW_COPY_AND_ASSIGN(ClassName)
 
-class CefBrowser { public: ~CefBrowser() {} };
-class CefBrowserHost { 
- public: 
-  void WasResized() {}
-  void CloseBrowser(bool force) {}
-  ~CefBrowserHost() {}
-};
-class CefClient { public: ~CefClient() {} };
-class CefDisplayHandler { public: ~CefDisplayHandler() {} };
-class CefLifeSpanHandler { public: ~CefLifeSpanHandler() {} };
-class CefLoadHandler { public: ~CefLoadHandler() {} };
-class CefRenderHandler { public: ~CefRenderHandler() {} };
-class CefV8Handler { public: ~CefV8Handler() {} };
-class CefApp { public: ~CefApp() {} };
-class CefBrowserProcessHandler { public: ~CefBrowserProcessHandler() {} };
-class CefFrame { public: void LoadURL(const std::string& url) {} void ExecuteJavaScript(const std::string& code, const std::string& url, int line) {} ~CefFrame() {} };
-class CefV8Value { public: ~CefV8Value() {} };
-class CefSettings {};
-class CefBrowserSettings {};
-class CefWindowInfo {
+class CefString {
  public:
-  void SetAsChild(CefWindowHandle parent, const CefRect& rect) {}
+  CefString() : value_() {}
+  CefString(const char* str) : value_(str ? str : "") {}
+  CefString(const std::string& str) : value_(str) {}
+  explicit CefString(std::string* str) : value_(str ? *str : "") {}
+  std::string ToString() const { return value_; }
+  const char* c_str() const { return value_.c_str(); }
+  void FromString(const std::string& str) { value_ = str; }
+
+ private:
+  std::string value_;
 };
-class CefMainArgs {
+
+class CefRect {
  public:
-  CefMainArgs(int argc, char** argv) {}
+  CefRect() : x(0), y(0), width(0), height(0) {}
+  CefRect(int ax, int ay, int awidth, int aheight)
+    : x(ax), y(ay), width(awidth), height(aheight) {}
+  int x;
+  int y;
+  int width;
+  int height;
 };
 
-typedef CefString CefStringBase;
-
-class CefCommand {};
-typedef int TransitionType;
-typedef int ErrorCode;
-
+class CefCursorInfo {};
 typedef std::vector<CefRect> RectList;
-typedef std::vector<CefRefPtr<CefV8Value>> CefV8ValueList;
-
+typedef std::vector<CefRefPtr<CefV8Value> > CefV8ValueList;
 enum PaintElementType { PET_VIEW = 0 };
-
-bool CefInitialize(const CefMainArgs& args, const CefSettings& settings, 
-                   CefRefPtr<CefApp> app, void* windows_sandbox_info) {
-  return true;
-}
-
-void CefShutdown() {}
-
-void CefRunMessageLoop() {}
-
-void CefQuitMessageLoop() {}
 
 class CefBrowserHost {
  public:
-  static CefRefPtr<CefBrowserHost> CreateBrowserSync(
-      const CefWindowInfo& window_info,
+  static CefRefPtr<CefBrowser> CreateBrowserSync(
+      const class CefWindowInfo& window_info,
       CefRefPtr<CefClient> client,
       const CefString& url,
-      const CefBrowserSettings& settings,
-      CefRefPtr<CefCommand> command,
-      CefWindowHandle parent) {
-    return CefRefPtr<CefBrowserHost>();
+      const class CefBrowserSettings& settings,
+      CefRefPtr<CefDictionaryValue> extra_info,
+      CefRefPtr<CefRequestContext> request_context) {
+    return CefRefPtr<CefBrowser>();
   }
+
+  void WasResized() {}
+  void CloseBrowser(bool force) {}
+};
+
+class CefFrame {
+ public:
+  void LoadURL(const CefString& url) {}
+  void ExecuteJavaScript(const CefString& code, const CefString& url, int line) {}
+  bool IsMain() { return true; }
+  CefString GetURL() { return CefString(); }
 };
 
 class CefBrowser {
@@ -129,16 +113,118 @@ class CefBrowser {
   int GetIdentifier() { return 0; }
 };
 
-class CefFrame {
+class CefClient {
  public:
-  void LoadURL(const CefString& url) {}
-  void ExecuteJavaScript(const CefString& code, const CefString& url, int line) {}
-  bool IsMain() { return false; }
-  CefString GetURL() { return CefString(); }
+  virtual CefRefPtr<CefDisplayHandler> GetDisplayHandler() { return CefRefPtr<CefDisplayHandler>(); }
+  virtual CefRefPtr<CefLifeSpanHandler> GetLifeSpanHandler() { return CefRefPtr<CefLifeSpanHandler>(); }
+  virtual CefRefPtr<CefLoadHandler> GetLoadHandler() { return CefRefPtr<CefLoadHandler>(); }
 };
 
-CefString CefURIEncode(const CefString& str, bool use_plus) {
-  return CefString();
+class CefDisplayHandler {
+ public:
+  virtual void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) {}
+};
+
+class CefLifeSpanHandler {
+ public:
+  virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) {}
+  virtual bool DoClose(CefRefPtr<CefBrowser> browser) { return false; }
+  virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) {}
+};
+
+class CefLoadHandler {
+ public:
+  virtual void OnLoadStart(CefRefPtr<CefBrowser> browser,
+                           CefRefPtr<CefFrame> frame,
+                           TransitionType transition_type) {}
+  virtual void OnLoadEnd(CefRefPtr<CefBrowser> browser,
+                         CefRefPtr<CefFrame> frame,
+                         int httpStatusCode) {}
+  virtual void OnLoadError(CefRefPtr<CefBrowser> browser,
+                           CefRefPtr<CefFrame> frame,
+                           ErrorCode errorCode,
+                           const CefString& errorText,
+                           const CefString& failedUrl) {}
+};
+
+class CefRenderHandler {
+ public:
+  virtual void GetViewRect(CefRefPtr<CefBrowser> browser, CefRect& rect) {}
+  virtual void OnPaint(CefRefPtr<CefBrowser> browser,
+                       PaintElementType type,
+                       const RectList& dirtyRects,
+                       const void* buffer,
+                       int width,
+                       int height) {}
+};
+
+class CefV8Handler {
+ public:
+  virtual bool Execute(const CefString& name,
+                       CefRefPtr<CefV8Value> object,
+                       const CefV8ValueList& arguments,
+                       CefRefPtr<CefV8Value>& retval,
+                       CefString& exception) { return false; }
+};
+
+class CefApp {
+ public:
+  virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() {
+    return CefRefPtr<CefBrowserProcessHandler>();
+  }
+};
+
+class CefBrowserProcessHandler {
+ public:
+  virtual void OnBeforeChildProcessLaunch(CefRefPtr<CefCommandLine> command_line) {}
+  virtual void OnContextInitialized() {}
+};
+
+class CefV8Value {};
+class CefCommand {};
+class CefCommandLine {};
+class CefDictionaryValue {};
+class CefRequestContext {};
+
+class CefSettings {
+ public:
+  std::string browser_subprocess_path;
+  std::string cache_path;
+  std::string resources_dir_path;
+  std::string locales_dir_path;
+};
+
+class CefBrowserSettings {};
+
+class CefWindowInfo {
+ public:
+  void SetAsChild(CefWindowHandle parent, const CefRect& rect) {}
+};
+
+class CefMainArgs {
+ public:
+  CefMainArgs(int argc, char** argv) {}
+};
+
+inline bool CefInitialize(const CefMainArgs& args,
+                          const CefSettings& settings,
+                          CefRefPtr<CefApp> app,
+                          void* windows_sandbox_info) {
+  return true;
 }
 
-#endif // CEF_STUBS_H
+inline int CefExecuteProcess(const CefMainArgs& args,
+                             CefRefPtr<CefApp> app,
+                             void* windows_sandbox_info) {
+  return -1;
+}
+
+inline void CefShutdown() {}
+inline void CefRunMessageLoop() {}
+inline void CefQuitMessageLoop() {}
+
+inline CefString CefURIEncode(const CefString& str, bool use_plus) {
+  return str;
+}
+
+#endif

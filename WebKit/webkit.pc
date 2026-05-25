@@ -1,0 +1,11 @@
+prefix=/usr/GNUstep/System
+exec_prefix=${prefix}
+libdir=${exec_prefix}/Library/Frameworks/WebKit.framework
+includedir=${prefix}/Library/Headers
+
+Name: WebKit
+Description: WebKit framework for GNUstep with CEF browser integration
+Version: 0.1
+Requires:
+Libs: -L${libdir} -lWebKit -lstdc++ -lpthread -lm -ldl
+Cflags: -I${includedir}

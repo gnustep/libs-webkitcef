@@ -6,13 +6,67 @@
 # before-all::
 
 # Things to do after compiling
-# after-all::
+after-all::
+	@CEF_PATH="$(CURDIR)/cef_build/cef-project"; \
+	CEF_BINARY_PATH=$$(find "$$CEF_PATH/third_party/cef" -maxdepth 1 -type d -name "cef_binary_*" | head -1); \
+	if [ -n "$$CEF_BINARY_PATH" ] && [ -d "$$CEF_BINARY_PATH/Resources" ] && [ -d "$$CEF_BINARY_PATH/Release" ]; then \
+		echo "Preparing CEF runtime resources..."; \
+		cp -a "$$CEF_BINARY_PATH/Resources/." "$$CEF_BINARY_PATH/Release/"; \
+	fi
 
 # Things to do before installing
 # before-install::
   
 # Things to do after installing
-# after-install::
+after-install::
+	@echo "Installing CEF libraries into framework..."
+	@CEF_PATH="$(CURDIR)/cef_build/cef-project"; \
+	CEF_BINARY_PATH=$$(find "$$CEF_PATH/third_party/cef" -maxdepth 1 -type d -name "cef_binary_*" | head -1); \
+	if [ -z "$$CEF_BINARY_PATH" ]; then \
+		echo "  (CEF binary not found - skipping library copy)"; \
+	else \
+		CEF_LIB_DIR="$$CEF_BINARY_PATH/Release"; \
+		CEF_DLL_WRAPPER_DIR="$$CEF_PATH/build/libcef_dll_wrapper/Release"; \
+		if [ -d "$$CEF_LIB_DIR" ]; then \
+			echo "  Found CEF libraries at $$CEF_LIB_DIR"; \
+			mkdir -p "$(FRAMEWORK_INSTALL_DIR)/WebKit.framework/Versions/Current/Libraries"; \
+			echo "  Copying CEF libraries to framework..."; \
+			for lib in $$CEF_LIB_DIR/*.so* $$CEF_LIB_DIR/*.a; do \
+				if [ -f "$$lib" ]; then \
+					echo "    Framework: $$(basename $$lib)"; \
+					cp -f "$$lib" "$(FRAMEWORK_INSTALL_DIR)/WebKit.framework/Versions/Current/Libraries/"; \
+				fi; \
+			done; \
+			if [ -d "$$CEF_DLL_WRAPPER_DIR" ]; then \
+				for lib in $$CEF_DLL_WRAPPER_DIR/*.a; do \
+					if [ -f "$$lib" ]; then \
+						echo "    Framework: $$(basename $$lib) (wrapper)"; \
+						cp -f "$$lib" "$(FRAMEWORK_INSTALL_DIR)/WebKit.framework/Versions/Current/Libraries/"; \
+					fi; \
+				done; \
+			fi; \
+			echo "  Installing CEF libraries to /usr/local/lib..."; \
+			mkdir -p /usr/local/lib; \
+			for lib in $$CEF_LIB_DIR/*.so*; do \
+				if [ -f "$$lib" ]; then \
+					echo "    System: $$(basename $$lib)"; \
+					cp -f "$$lib" /usr/local/lib/; \
+					chmod 755 "/usr/local/lib/$$(basename $$lib)"; \
+				fi; \
+			done; \
+			for lib in $$CEF_LIB_DIR/*.a $$CEF_DLL_WRAPPER_DIR/*.a; do \
+				if [ -f "$$lib" ]; then \
+					echo "    System: $$(basename $$lib)"; \
+					cp -f "$$lib" /usr/local/lib/; \
+					chmod 644 "/usr/local/lib/$$(basename $$lib)"; \
+				fi; \
+			done; \
+			ldconfig 2>/dev/null || true; \
+			echo "  ✅ CEF libraries installed to framework and system"; \
+		else \
+			echo "  (CEF libraries not built at $$CEF_LIB_DIR - skipping)"; \
+		fi; \
+	fi
 
 # Things to do before uninstalling
 # before-uninstall::
@@ -24,7 +78,8 @@
 # before-clean::
 
 # Things to do after cleaning
-# after-clean::
+after-clean::
+	@rm -rf WebKit.framework/Versions/Current/Libraries
 
 # Things to do before distcleaning
 # before-distclean::
@@ -37,4 +92,3 @@
 
 # Things to do after checking
 # after-check::
-

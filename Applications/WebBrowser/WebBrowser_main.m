@@ -7,10 +7,33 @@
 */
 
 #import <AppKit/AppKit.h>
+#import <WebKit/WebKit.h>
+#include <string.h>
 
 int 
 main(int argc, const char *argv[])
 {
+  int i;
+  BOOL isCEFSubprocess = NO;
+
+  for (i = 1; i < argc; i++)
+    {
+      if (strncmp(argv[i], "--type=", 7) == 0)
+        {
+          isCEFSubprocess = YES;
+          break;
+        }
+    }
+
+  if (isCEFSubprocess)
+    {
+      int cefExitCode = WebKitCEFExecuteProcess(argc, argv);
+      if (cefExitCode >= 0)
+        {
+          return cefExitCode;
+        }
+    }
+
 // Uncomment if your application is Renaissance application
 /*  CREATE_AUTORELEASE_POOL (pool);
   [NSApplication sharedApplication];
@@ -27,4 +50,3 @@ main(int argc, const char *argv[])
 
   return NSApplicationMain (argc, argv);
 }
-

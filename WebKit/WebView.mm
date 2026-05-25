@@ -28,7 +28,6 @@
 
 #include <iostream>
 #include <map>
-#include <memory>
 
 #ifndef HAVE_CEF
   // Use CEF stubs when full CEF is not available
@@ -53,34 +52,6 @@
 // Global CEF state
 static bool g_cef_initialized = false;
 static int g_browser_count = 0;
-
-// JavaScript result callback structure
-class JavaScriptResultCallback {
- public:
-  typedef void (^CompletionHandler)(NSString* result);
-  
-  JavaScriptResultCallback(CompletionHandler handler) 
-    : handler_([handler copy]) {}
-  
-  ~JavaScriptResultCallback() {
-    if (handler_) {
-      [handler_ release];
-    }
-  }
-  
-  void Execute(const CefString& result) {
-    if (handler_) {
-      std::string utf8_str = result.ToString();
-      NSString* resultStr = [NSString stringWithUTF8String:utf8_str.c_str()];
-      dispatch_async(dispatch_get_main_queue(), ^{
-        handler_(resultStr);
-      });
-    }
-  }
-  
- private:
-  CompletionHandler handler_;
-};
 
 // Custom V8 handler for JavaScript to native callbacks
 class GSV8Handler : public CefV8Handler {
@@ -108,7 +79,7 @@ class GSCefClient : public CefClient,
  public:
   explicit GSCefClient(WebView* view) 
     : web_view_(view), 
-      browser_(nullptr),
+      browser_(),
       js_result_callbacks_() {
   }
 
@@ -128,11 +99,7 @@ class GSCefClient : public CefClient,
   // CefDisplayHandler methods
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
                      const CefString& title) override {
-    if (web_view_) {
-      dispatch_async(dispatch_get_main_queue(), ^{
-        // Update view if needed - title available from browser
-      });
-    }
+    // Update view if needed - title available from browser
   }
 
   // CefLifeSpanHandler methods
@@ -141,9 +108,9 @@ class GSCefClient : public CefClient,
     g_browser_count++;
     
     if (web_view_) {
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [web_view_ browserCreated:(void*)browser_.get()];
-      });
+      [web_view_ performSelectorOnMainThread: @selector(browserCreated:)
+                                  withObject: nil
+                               waitUntilDone: NO];
     }
   }
 
@@ -153,7 +120,7 @@ class GSCefClient : public CefClient,
 
   void OnBeforeClose(CefRefPtr<CefBrowser> browser) override {
     if (browser_->GetIdentifier() == browser->GetIdentifier()) {
-      browser_ = nullptr;
+      browser_ = CefRefPtr<CefBrowser>();
       g_browser_count--;
       
       if (g_browser_count == 0) {
@@ -167,9 +134,9 @@ class GSCefClient : public CefClient,
                    CefRefPtr<CefFrame> frame,
                    TransitionType transition_type) override {
     if (web_view_ && frame->IsMain()) {
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [web_view_ loadingStarted];
-      });
+      [web_view_ performSelectorOnMainThread: @selector(loadingStarted)
+                                  withObject: nil
+                               waitUntilDone: NO];
     }
   }
 
@@ -177,9 +144,9 @@ class GSCefClient : public CefClient,
                  CefRefPtr<CefFrame> frame,
                  int httpStatusCode) override {
     if (web_view_ && frame->IsMain()) {
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [web_view_ loadingEnded];
-      });
+      [web_view_ performSelectorOnMainThread: @selector(loadingEnded)
+                                  withObject: nil
+                               waitUntilDone: NO];
     }
   }
 
@@ -191,9 +158,9 @@ class GSCefClient : public CefClient,
     if (web_view_ && frame->IsMain()) {
       std::string utf8_error = errorText.ToString();
       NSString* errorTextStr = [NSString stringWithUTF8String:utf8_error.c_str()];
-      dispatch_async(dispatch_get_main_queue(), ^{
-        [web_view_ loadingFailed:errorTextStr];
-      });
+      [web_view_ performSelectorOnMainThread: @selector(loadingFailed:)
+                                  withObject: errorTextStr
+                               waitUntilDone: NO];
     }
   }
 
@@ -201,10 +168,9 @@ class GSCefClient : public CefClient,
     return browser_;
   }
 
-  void StoreJavaScriptResult(int callback_id, 
-                             JavaScriptResultCallback::CompletionHandler handler) {
-    js_result_callbacks_[callback_id] = 
-      std::make_unique<JavaScriptResultCallback>(handler);
+  void StoreJavaScriptResult(int callback_id,
+                             WebViewJavaScriptCompletionHandler handler) {
+    js_result_callbacks_[callback_id] = handler;
   }
 
   IMPLEMENT_REFCOUNTING(GSCefClient);
@@ -212,7 +178,7 @@ class GSCefClient : public CefClient,
  private:
   WebView* web_view_;
   CefRefPtr<CefBrowser> browser_;
-  std::map<int, std::unique_ptr<JavaScriptResultCallback>> js_result_callbacks_;
+  std::map<int, WebViewJavaScriptCompletionHandler> js_result_callbacks_;
 };
 
 // Render handler for off-screen rendering (OSR)
@@ -255,7 +221,7 @@ class GSRenderHandler : public CefRenderHandler {
     std::string utf8_src = source.ToString();
     NSString* msg = [NSString stringWithUTF8String:utf8_msg.c_str()];
     NSString* src = [NSString stringWithUTF8String:utf8_src.c_str()];
-    NSLog(@"[CEF Console] %s:%d - %@", src.UTF8String, line, msg);
+    NSLog(@"[CEF Console] %s:%d - %@", [src UTF8String], line, msg);
     return false;
   }
 
@@ -286,13 +252,18 @@ class GSCefApp : public CefApp, public CefBrowserProcessHandler {
   IMPLEMENT_REFCOUNTING(GSCefApp);
 };
 
+extern "C" int WebKitCEFExecuteProcess(int argc, const char **argv) {
+  CefMainArgs main_args(argc, const_cast<char**>(argv));
+  CefRefPtr<CefApp> app;
+  return CefExecuteProcess(main_args, app, NULL);
+}
 
 std::string GetExecutablePath() {
   NSString *path = [[NSBundle mainBundle] executablePath];
 
   if (path == nil) {
-    NSString *arg0 = [[NSProcessInfo processInfo] arguments][0];
-    path = [[NSURL fileURLWithPath:arg0] URLByResolvingSymlinksInPath].path;
+    NSString *arg0 = [[[NSProcessInfo processInfo] arguments] objectAtIndex: 0];
+    path = [[[NSURL fileURLWithPath:arg0] URLByResolvingSymlinksInPath] path];
   }
 
   NSLog(@"CEF Executable path: %@", path);
@@ -320,6 +291,18 @@ std::string GetCEFPath() {
   return [frameworkPath UTF8String];
 }
 
+std::string GetCEFResourcePath() {
+#ifdef WEBKIT_CEF_BINARY_PATH
+  return std::string(WEBKIT_CEF_BINARY_PATH) + "/Resources";
+#else
+  return GetCEFPath();
+#endif
+}
+
+std::string GetCEFLocalesPath() {
+  return GetCEFResourcePath() + "/locales";
+}
+
 void LoadHTML(CefRefPtr<CefFrame> frame, const std::string& html) {
   if (!frame) return;
 
@@ -330,18 +313,40 @@ void LoadHTML(CefRefPtr<CefFrame> frame, const std::string& html) {
 }
 
 CefMainArgs GetMainArgsFromNSProcessInfo() {
-  NSArray<NSString *> *args = [[NSProcessInfo processInfo] arguments];
+  NSArray *args = [[NSProcessInfo processInfo] arguments];
   int argc = (int)[args count];
 
   // Allocate argv array
-  char** argv = new char*[argc];
+  char** argv = new char*[argc + 1];
   for (int i = 0; i < argc; ++i) {
-    const char* utf8 = [args[i] UTF8String];
+    const char* utf8 = [[args objectAtIndex: i] UTF8String];
     argv[i] = strdup(utf8);
   }
+  argv[argc] = NULL;
 
   // Return CefMainArgs
   return CefMainArgs(argc, argv);
+}
+
+static void InitializeCEFIfNeeded(void) {
+  if (!g_cef_initialized) {
+    CefMainArgs main_args = GetMainArgsFromNSProcessInfo();
+    CefSettings settings;
+
+    CefString(&settings.browser_subprocess_path).FromString(GetExecutablePath());
+    CefString(&settings.cache_path).FromString(GetCachePath());
+    CefString(&settings.resources_dir_path).FromString(GetCEFResourcePath());
+    CefString(&settings.locales_dir_path).FromString(GetCEFLocalesPath());
+    settings.no_sandbox = true;
+
+    CefRefPtr<CefApp> app;
+    if (CefInitialize(main_args, settings, app, NULL)) {
+      g_cef_initialized = true;
+      NSLog(@"CEF initialized successfully");
+    } else {
+      NSLog(@"Failed to initialize CEF");
+    }
+  }
 }
 
 @interface GSWebView : WebView
@@ -358,28 +363,6 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
 @implementation WebView
 
 + (void)initialize {
-  // Initialize CEF once when the class is first used
-  static BOOL initialized = NO;
-  if (!initialized) {
-    initialized = YES;
-    
-    if (!g_cef_initialized) {
-      CefMainArgs main_args = GetMainArgsFromNSProcessInfo();
-      CefSettings settings;
-      
-      // Set CEF paths
-      CefString(&settings.browser_subprocess_path).FromString(GetExecutablePath());
-      CefString(&settings.cache_path).FromString(GetCachePath());
-      
-      // Initialize CEF
-      if (CefInitialize(main_args, settings, new GSCefApp(), nullptr)) {
-        g_cef_initialized = true;
-        NSLog(@"CEF initialized successfully");
-      } else {
-        NSLog(@"Failed to initialize CEF");
-      }
-    }
-  }
 }
 
 + (id) allocWithZone: (NSZone *)zone {
@@ -483,9 +466,6 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
   
   NSLog(@"GSWebView: Initializing CEF browser");
   
-  // Ensure CEF is initialized
-  [WebView initialize];
-  
   NSRect frameRect = [self frame];
   NSWindow *window = [self window];
   
@@ -493,6 +473,8 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
     NSLog(@"Warning: WebView not in a window yet");
     return;
   }
+
+  InitializeCEFIfNeeded();
   
   // Create CEF window info
   CefWindowInfo window_info;
@@ -512,7 +494,7 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
   );
   
   // Create the CEF client
-  client_ = new GSCefClient(self);
+    client_ = new GSCefClient(self);
   
   // Configure browser settings
   CefBrowserSettings browser_settings;
@@ -523,13 +505,16 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
   CefString start_url = "about:blank";
   
   // Create the browser
+  CefRefPtr<CefDictionaryValue> extraInfo;
+  CefRefPtr<CefRequestContext> requestContext;
+
   browser_ = CefBrowserHost::CreateBrowserSync(
     window_info,
     client_,
     start_url,
     browser_settings,
-    nullptr,
-    nullptr
+    extraInfo,
+    requestContext
   );
   
   if (browser_) {
@@ -565,10 +550,10 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
     if (host) {
       host->CloseBrowser(true);
     }
-    browser_ = nullptr;
+    browser_ = CefRefPtr<CefBrowser>();
   }
   
-  client_ = nullptr;
+  client_ = CefRefPtr<GSCefClient>();
   
   if (currentURL_) {
     [currentURL_ release];
@@ -690,12 +675,12 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
            completionHandler:(WebViewJavaScriptCompletionHandler)completionHandler {
   if (!browser_ || !isInitialized_) {
     if (completionHandler) {
+      NSDictionary *userInfo = [NSDictionary dictionaryWithObject: @"Browser not initialized"
+                                                           forKey: NSLocalizedDescriptionKey];
       NSError* error = [NSError errorWithDomain:@"WebView" 
                                            code:-1 
-                                       userInfo:@{NSLocalizedDescriptionKey: @"Browser not initialized"}];
-      dispatch_async(dispatch_get_main_queue(), ^{
-        completionHandler(nil, error);
-      });
+                                       userInfo:userInfo];
+      completionHandler(nil, error);
     }
     return;
   }
@@ -710,9 +695,7 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
   }
   
   if (completionHandler) {
-    dispatch_async(dispatch_get_main_queue(), ^{
-      completionHandler(@"", nil);
-    });
+    completionHandler(@"", nil);
   }
 }
 

@@ -1,0 +1,40 @@
+#
+# GNUmakefile.webkit-helper - Include this in your app's GNUmakefile.preamble
+# 
+# Add this line to your GNUmakefile.preamble:
+#   -include ../WebKit/GNUmakefile.webkit-helper
+#
+# This handles CEF library linking automatically
+
+# Paths to WebKit
+WEBKIT_DIR ?= ../WebKit
+CEF_PATH = $(WEBKIT_DIR)/cef_build/cef-project
+
+# Find CEF binary directory (handles version number changes). Ignore the
+# downloaded archive files that share the cef_binary_* prefix.
+CEF_BINARY_CANDIDATES = $(filter-out %.tar.bz2 %.tar.bz2.sha1,$(wildcard $(CEF_PATH)/third_party/cef/cef_binary_*))
+CEF_BINARY_PATH = $(firstword $(CEF_BINARY_CANDIDATES))
+CEF_LIB_DIR = $(CEF_BINARY_PATH)/Release
+CEF_DLL_WRAPPER_DIR = $(CEF_PATH)/build/libcef_dll_wrapper
+
+# Try to link CEF libraries if they exist
+ifneq ($(wildcard $(CEF_LIB_DIR)/libcef.so),)
+  # CEF built locally - use it
+  WEBKIT_LDFLAGS = -L$(CEF_LIB_DIR) -lcef -lvk_swiftshader
+  WEBKIT_RPATH = -Wl,-rpath,$(CEF_LIB_DIR):$(CEF_DLL_WRAPPER_DIR)
+else ifneq ($(wildcard /usr/local/lib/libcef.so),)
+  # System-installed CEF libraries
+  WEBKIT_LDFLAGS = -L/usr/local/lib -lcef -lvk_swiftshader
+  WEBKIT_RPATH = -Wl,-rpath,/usr/local/lib
+else
+  # CEF not available - try to link anyway (may fail at runtime if CEF is needed)
+  # Uncomment to make linking optional:
+  # WEBKIT_LDFLAGS = 
+  # Or keep strict linking:
+  WEBKIT_LDFLAGS = -lcef -lvk_swiftshader
+  WEBKIT_RPATH =
+endif
+
+# Add WebKit to link flags
+ADDITIONAL_LDFLAGS += -L$(WEBKIT_DIR)/WebKit.framework $(WEBKIT_LDFLAGS) $(WEBKIT_RPATH)
+ADDITIONAL_LIB_DIRS += $(WEBKIT_DIR)/WebKit.framework

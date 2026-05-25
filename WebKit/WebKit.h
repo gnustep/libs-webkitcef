@@ -27,5 +27,14 @@
 
 #import <WebKit/WebView.h>
 
-#endif // _WEBKIT_H_
+#ifdef __cplusplus
+extern "C" {
+#endif
 
+int WebKitCEFExecuteProcess(int argc, const char **argv);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif // _WEBKIT_H_

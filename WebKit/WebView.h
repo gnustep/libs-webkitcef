@@ -30,8 +30,10 @@
 #include <Foundation/Foundation.h>
 #include <AppKit/AppKit.h>
 
-// JavaScript evaluation completion handler
-typedef void (^WebViewJavaScriptCompletionHandler)(NSString* result, NSError* error);
+/* JavaScript evaluation completion handler.
+ * Function-pointer based so consumers can use ObjC 1.0 runtimes.
+ */
+typedef void (*WebViewJavaScriptCompletionHandler)(NSString* result, NSError* error);
 
 // WebView interface
 @interface WebView : NSView
