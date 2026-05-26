@@ -8,6 +8,12 @@ GNUstep applications.
 The repository also includes a small `WebBrowser` demo application that uses the
 framework.
 
+## Screenshot
+
+This is a test browser running on Linux using GNUstep...
+
+<img width="906" height="705" alt="webpage_demo" src="https://github.com/user-attachments/assets/e38b0241-555c-4b08-9f2c-6b3e0b68f7f6" />
+
 ## Repository Layout
 
 - `WebKit/` - GNUstep framework sources, public headers, CEF integration, and
