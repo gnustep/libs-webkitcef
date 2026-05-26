@@ -7,7 +7,6 @@
     CopyrightDescription = "Released under ...";
     FullVersionID = "0.1";
     NSExecutable = WebBrowser;
-    NSMainNibFile = "WebBrowser.gorm";
     NSPrincipalClass = NSApplication;
     NSRole = Application;
 }

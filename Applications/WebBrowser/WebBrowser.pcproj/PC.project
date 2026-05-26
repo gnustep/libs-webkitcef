@@ -1,7 +1,7 @@
 {
     APPLICATIONICON = "";
     "APP_DOCUMENT_BASED" = NO;
-    "APP_TYPE" = GORM;
+    "APP_TYPE" = APP;
     "BUNDLE_IDENTIFIER" = "";
     "CLASS_FILES" = (
 	"AppController.m"
@@ -20,7 +20,6 @@
     );
     INSTALLDIR = "$(HOME)/GNUstep";
     INTERFACES = (
-	"WebBrowser.gorm"
     );
     LANGUAGE = English;
     LIBRARIES = (
@@ -30,7 +29,7 @@
     LINKEROPTIONS = "";
     "LOCALIZED_RESOURCES" = (
     );
-    MAININTERFACE = "WebBrowser.gorm";
+    MAININTERFACE = "";
     MAKEFILEDIR = "$(GNUSTEP_MAKEFILES)";
     "OBJC_COMPILEROPTIONS" = "";
     "OTHER_RESOURCES" = (

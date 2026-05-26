@@ -52,6 +52,7 @@
 // Global CEF state
 static bool g_cef_initialized = false;
 static int g_browser_count = 0;
+static NSTimer *g_cef_message_loop_timer = nil;
 
 // Custom V8 handler for JavaScript to native callbacks
 class GSV8Handler : public CefV8Handler {
@@ -236,6 +237,14 @@ class GSCefApp : public CefApp, public CefBrowserProcessHandler {
  public:
   GSCefApp() {}
 
+  void OnBeforeCommandLineProcessing(
+      const CefString& process_type,
+      CefRefPtr<CefCommandLine> command_line) override {
+    command_line->AppendSwitch("disable-gpu");
+    command_line->AppendSwitch("disable-gpu-compositing");
+    command_line->AppendSwitch("no-sandbox");
+  }
+
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
     return this;
   }
@@ -252,9 +261,19 @@ class GSCefApp : public CefApp, public CefBrowserProcessHandler {
   IMPLEMENT_REFCOUNTING(GSCefApp);
 };
 
+@interface GSCEFMessagePump : NSObject
++ (void)doMessageLoopWork:(NSTimer *)timer;
+@end
+
+@implementation GSCEFMessagePump
++ (void)doMessageLoopWork:(NSTimer *)timer {
+  CefDoMessageLoopWork();
+}
+@end
+
 extern "C" int WebKitCEFExecuteProcess(int argc, const char **argv) {
   CefMainArgs main_args(argc, const_cast<char**>(argv));
-  CefRefPtr<CefApp> app;
+  CefRefPtr<CefApp> app = new GSCefApp();
   return CefExecuteProcess(main_args, app, NULL);
 }
 
@@ -303,13 +322,15 @@ std::string GetCEFLocalesPath() {
   return GetCEFResourcePath() + "/locales";
 }
 
+std::string DataURLForHTML(const std::string& html) {
+  CefString encoded = CefURIEncode(CefString(html), false);
+  return "data:text/html;charset=utf-8," + encoded.ToString();
+}
+
 void LoadHTML(CefRefPtr<CefFrame> frame, const std::string& html) {
   if (!frame) return;
 
-  // For HTML content, use data: URL with proper encoding
-  CefString encoded = CefURIEncode(CefString(html), false);
-  std::string data_url = "data:text/html;charset=utf-8," + encoded.ToString();
-  frame->LoadURL(data_url);
+  frame->LoadURL(DataURLForHTML(html));
 }
 
 CefMainArgs GetMainArgsFromNSProcessInfo() {
@@ -339,9 +360,17 @@ static void InitializeCEFIfNeeded(void) {
     CefString(&settings.locales_dir_path).FromString(GetCEFLocalesPath());
     settings.no_sandbox = true;
 
-    CefRefPtr<CefApp> app;
+    CefRefPtr<CefApp> app = new GSCefApp();
     if (CefInitialize(main_args, settings, app, NULL)) {
       g_cef_initialized = true;
+      if (g_cef_message_loop_timer == nil) {
+        g_cef_message_loop_timer =
+          [[NSTimer scheduledTimerWithTimeInterval: 0.01
+                                           target: [GSCEFMessagePump class]
+                                         selector: @selector(doMessageLoopWork:)
+                                         userInfo: nil
+                                          repeats: YES] retain];
+      }
       NSLog(@"CEF initialized successfully");
     } else {
       NSLog(@"Failed to initialize CEF");
@@ -357,7 +386,10 @@ static void InitializeCEFIfNeeded(void) {
   BOOL isLoading_;
   NSString* currentURL_;
   NSString* pageTitle_;
+  NSString* pendingURL_;
+  NSString* pendingHTML_;
 }
+- (void)initializeBrowserIfNeeded;
 @end
 
 @implementation WebView
@@ -453,20 +485,27 @@ static void InitializeCEFIfNeeded(void) {
     isLoading_ = NO;
     currentURL_ = nil;
     pageTitle_ = nil;
+    pendingURL_ = nil;
+    pendingHTML_ = nil;
   }
   return self;
 }
 
 - (void)awakeFromNib {
   [super awakeFromNib];
-  
+}
+
+- (void)viewDidMoveToWindow {
+  [super viewDidMoveToWindow];
+}
+
+- (void)initializeBrowserIfNeeded {
   if (isInitialized_) {
     return;  // Already initialized
   }
   
   NSLog(@"GSWebView: Initializing CEF browser");
   
-  NSRect frameRect = [self frame];
   NSWindow *window = [self window];
   
   if (!window) {
@@ -480,17 +519,17 @@ static void InitializeCEFIfNeeded(void) {
   CefWindowInfo window_info;
   
   // Convert view coordinates to window coordinates
-  NSRect windowRect = [self convertRect:frameRect toView:nil];
+  NSRect windowRect = [self convertRect: [self bounds] toView: nil];
   
-  // For macOS, set the parent view
+  // CEF on GNUstep/Linux expects the native X window handle, not an NSView.
   window_info.SetAsChild(
-    (CefWindowHandle)[window contentView],
-    {
+    (CefWindowHandle)[window windowRef],
+    CefRect(
       (int)windowRect.origin.x,
       (int)windowRect.origin.y,
       (int)windowRect.size.width,
       (int)windowRect.size.height
-    }
+    )
   );
   
   // Create the CEF client
@@ -501,8 +540,14 @@ static void InitializeCEFIfNeeded(void) {
   // Most browser settings are controlled via CEF command line
   // for details see CEF documentation
   
-  // Default URL
   CefString start_url = "about:blank";
+
+  if (pendingHTML_) {
+    std::string html = [pendingHTML_ UTF8String];
+    start_url = DataURLForHTML(html);
+  } else if (pendingURL_) {
+    start_url = std::string([pendingURL_ UTF8String]);
+  }
   
   // Create the browser
   CefRefPtr<CefDictionaryValue> extraInfo;
@@ -562,6 +607,14 @@ static void InitializeCEFIfNeeded(void) {
   if (pageTitle_) {
     [pageTitle_ release];
   }
+
+  if (pendingURL_) {
+    [pendingURL_ release];
+  }
+
+  if (pendingHTML_) {
+    [pendingHTML_ release];
+  }
   
   [super dealloc];
 }
@@ -581,6 +634,8 @@ static void InitializeCEFIfNeeded(void) {
 }
 
 - (void)loadRequest:(NSURLRequest*)request {
+  [self initializeBrowserIfNeeded];
+
   if (!browser_ || !isInitialized_) {
     NSLog(@"Warning: Cannot load request - browser not initialized");
     return;
@@ -591,8 +646,26 @@ static void InitializeCEFIfNeeded(void) {
 }
 
 - (void)loadHTMLString:(NSString*)string baseURL:(NSURL*)baseURL {
+  BOOL wasInitialized = isInitialized_;
+
+  if (pendingHTML_) {
+    [pendingHTML_ release];
+  }
+  pendingHTML_ = [string retain];
+
+  if (pendingURL_) {
+    [pendingURL_ release];
+    pendingURL_ = nil;
+  }
+
+  [self initializeBrowserIfNeeded];
+
   if (!browser_ || !isInitialized_) {
     NSLog(@"Warning: Cannot load HTML - browser not initialized");
+    return;
+  }
+
+  if (!wasInitialized) {
     return;
   }
   
@@ -605,8 +678,30 @@ static void InitializeCEFIfNeeded(void) {
 }
 
 - (void)loadURL:(NSString*)url {
+  BOOL wasInitialized = isInitialized_;
+
+  if (pendingURL_) {
+    [pendingURL_ release];
+  }
+  pendingURL_ = [url retain];
+
+  if (pendingHTML_) {
+    [pendingHTML_ release];
+    pendingHTML_ = nil;
+  }
+
+  [self initializeBrowserIfNeeded];
+
   if (!browser_ || !isInitialized_) {
     NSLog(@"Warning: Cannot load URL - browser not initialized");
+    return;
+  }
+
+  if (!wasInitialized) {
+    if (currentURL_) {
+      [currentURL_ release];
+    }
+    currentURL_ = [url retain];
     return;
   }
   

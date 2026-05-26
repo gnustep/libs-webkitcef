@@ -169,6 +169,8 @@ class CefV8Handler {
 
 class CefApp {
  public:
+  virtual void OnBeforeCommandLineProcessing(const CefString& process_type,
+                                             CefRefPtr<CefCommandLine> command_line) {}
   virtual CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() {
     return CefRefPtr<CefBrowserProcessHandler>();
   }
@@ -182,7 +184,10 @@ class CefBrowserProcessHandler {
 
 class CefV8Value {};
 class CefCommand {};
-class CefCommandLine {};
+class CefCommandLine {
+ public:
+  void AppendSwitch(const CefString& name) {}
+};
 class CefDictionaryValue {};
 class CefRequestContext {};
 

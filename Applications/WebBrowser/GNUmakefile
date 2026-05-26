@@ -32,7 +32,7 @@ WebBrowser_APPLICATION_ICON =
 # Resource files
 #
 WebBrowser_RESOURCE_FILES = \
-Resources/WebBrowser.gorm \
+Resources/Demo.html
 
 
 #

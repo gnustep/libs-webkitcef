@@ -38,6 +38,8 @@
 
 - (void) dealloc
 {
+  [_webView release];
+  [_window release];
   [super dealloc];
 }
 
@@ -49,6 +51,49 @@
 {
 // Uncomment if your application is Renaissance-based
 //  [NSBundle loadGSMarkupNamed: @"Main" owner: self];
+  NSRect windowFrame;
+  NSView *contentView;
+  NSString *demoPath;
+
+  if (_window == nil)
+    {
+      windowFrame = NSMakeRect(100, 100, 1024, 768);
+      _window = [[NSWindow alloc] initWithContentRect: windowFrame
+                                            styleMask: (NSTitledWindowMask
+                                                        | NSClosableWindowMask
+                                                        | NSMiniaturizableWindowMask
+                                                        | NSResizableWindowMask)
+                                              backing: NSBackingStoreBuffered
+                                                defer: NO];
+      [_window setTitle: @"CEF WebKit Demo"];
+    }
+
+  contentView = [_window contentView];
+
+  while ([[contentView subviews] count] > 0)
+    {
+      [[[contentView subviews] objectAtIndex: 0] removeFromSuperview];
+    }
+
+  [_window makeKeyAndOrderFront: self];
+  [NSApp activateIgnoringOtherApps: YES];
+
+  if (_webView == nil)
+    {
+      _webView = [[WebView alloc] initWithFrame: [contentView bounds]];
+      [_webView setAutoresizingMask: (NSViewWidthSizable | NSViewHeightSizable)];
+      [contentView addSubview: _webView];
+    }
+
+  demoPath = [[NSBundle mainBundle] pathForResource: @"Demo" ofType: @"html"];
+  if (demoPath != nil)
+    {
+      [_webView loadURL: [[NSURL fileURLWithPath: demoPath] absoluteString]];
+    }
+  else
+    {
+      [_webView loadURL: @"https://example.com"];
+    }
 }
 
 - (BOOL) applicationShouldTerminate: (id)sender

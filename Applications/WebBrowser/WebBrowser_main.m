@@ -8,6 +8,7 @@
 
 #import <AppKit/AppKit.h>
 #import <WebKit/WebKit.h>
+#import "AppController.h"
 #include <string.h>
 
 int 
@@ -34,19 +35,17 @@ main(int argc, const char *argv[])
         }
     }
 
-// Uncomment if your application is Renaissance application
-/*  CREATE_AUTORELEASE_POOL (pool);
-  [NSApplication sharedApplication];
-  [NSApp setDelegate: [AppController new]];
+  {
+    NSAutoreleasePool *pool = [[NSAutoreleasePool alloc] init];
+    AppController *delegate;
 
-  #ifdef GNUSTEP
-    [NSBundle loadGSMarkupNamed: @"MainMenu-GNUstep"  owner: [NSApp delegate]];
-  #else
-    [NSBundle loadGSMarkupNamed: @"MainMenu-OSX"  owner: [NSApp delegate]];
-  #endif
-   
-  RELEASE (pool);
-*/
+    [NSApplication sharedApplication];
+    delegate = [[AppController alloc] init];
+    [NSApp setDelegate: delegate];
+    [pool release];
+    [NSApp run];
+    [delegate release];
+  }
 
-  return NSApplicationMain (argc, argv);
+  return 0;
 }
