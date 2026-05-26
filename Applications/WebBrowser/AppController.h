@@ -19,6 +19,7 @@
 @interface AppController : NSObject
 {
   IBOutlet NSWindow *_window;
+  NSTextField *_urlField;
   WebView *_webView;
 }
 
@@ -29,16 +30,23 @@
 - (id) init;
 - (void) dealloc;
 - (void) awakeFromNib;
+- (void) setupMainMenu;
+- (void) layoutBrowserViews;
+- (void) updateURLFieldFromWebView;
+- (NSString *) normalizedURLStringFromString: (NSString *)urlString;
 
 // Notification methods...
 - (void) applicationDidFinishLaunching: (NSNotification *)aNotif;
 - (BOOL) applicationShouldTerminate: (id)sender;
 - (void) applicationWillTerminate: (NSNotification *)aNotif;
+- (void) windowDidResize: (NSNotification *)notification;
 - (BOOL) application: (NSApplication *)application
 	    openFile: (NSString *)fileName;
 
 // Actions...
 - (IBAction) showPrefPanel: (id)sender;
+- (IBAction) urlFieldDidReturn: (id)sender;
+- (void) webViewURLDidChange: (NSNotification *)notification;
 
 @end
 

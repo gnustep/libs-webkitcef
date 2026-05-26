@@ -47,12 +47,25 @@
   #include "include/cef_parser.h"
 #endif
 
+#if defined(HAVE_CEF) && defined(__linux__)
+  #include <X11/Xlib.h>
+  #ifdef Success
+    #undef Success
+  #endif
+#endif
+
 #import "WebView.h"
+
+NSString *WebViewURLDidChangeNotification = @"WebViewURLDidChangeNotification";
+NSString *WebViewURLKey = @"WebViewURL";
 
 // Global CEF state
 static bool g_cef_initialized = false;
 static int g_browser_count = 0;
 static NSTimer *g_cef_message_loop_timer = nil;
+#if defined(HAVE_CEF) && defined(__linux__)
+static Display *g_x_display = NULL;
+#endif
 
 // Custom V8 handler for JavaScript to native callbacks
 class GSV8Handler : public CefV8Handler {
@@ -101,6 +114,18 @@ class GSCefClient : public CefClient,
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
                      const CefString& title) override {
     // Update view if needed - title available from browser
+  }
+
+  void OnAddressChange(CefRefPtr<CefBrowser> browser,
+                       CefRefPtr<CefFrame> frame,
+                       const CefString& url) override {
+    if (web_view_ && frame->IsMain()) {
+      std::string utf8_url = url.ToString();
+      NSString* urlString = [NSString stringWithUTF8String:utf8_url.c_str()];
+      [web_view_ performSelectorOnMainThread: @selector(urlChanged:)
+                                  withObject: urlString
+                               waitUntilDone: NO];
+    }
   }
 
   // CefLifeSpanHandler methods
@@ -390,6 +415,8 @@ static void InitializeCEFIfNeeded(void) {
   NSString* pendingHTML_;
 }
 - (void)initializeBrowserIfNeeded;
+- (void)browserViewWasResized;
+- (NSRect)browserChildWindowRect;
 @end
 
 @implementation WebView
@@ -474,9 +501,27 @@ static void InitializeCEFIfNeeded(void) {
   // Base implementation - overridden in GSWebView
 }
 
+- (void)urlChanged:(NSString*)url {
+  // Base implementation - overridden in GSWebView
+}
+
 @end
 
 @implementation GSWebView
+
+- (void)postURLDidChangeNotification {
+  NSDictionary *userInfo;
+
+  userInfo = nil;
+  if (currentURL_) {
+    userInfo = [NSDictionary dictionaryWithObject: currentURL_
+                                           forKey: WebViewURLKey];
+  }
+
+  [[NSNotificationCenter defaultCenter] postNotificationName: WebViewURLDidChangeNotification
+                                                      object: self
+                                                    userInfo: userInfo];
+}
 
 - (id)initWithFrame:(NSRect)frameRect {
   self = [super initWithFrame:frameRect];
@@ -518,8 +563,7 @@ static void InitializeCEFIfNeeded(void) {
   // Create CEF window info
   CefWindowInfo window_info;
   
-  // Convert view coordinates to window coordinates
-  NSRect windowRect = [self convertRect: [self bounds] toView: nil];
+  NSRect windowRect = [self browserChildWindowRect];
   
   // CEF on GNUstep/Linux expects the native X window handle, not an NSView.
   window_info.SetAsChild(
@@ -577,16 +621,30 @@ static void InitializeCEFIfNeeded(void) {
 - (void)loadingStarted {
   isLoading_ = YES;
   NSLog(@"Page loading started");
+  [self urlChanged: [[self mainFrameURL] absoluteString]];
 }
 
 - (void)loadingEnded {
   isLoading_ = NO;
   NSLog(@"Page loading ended");
+  [self urlChanged: [[self mainFrameURL] absoluteString]];
 }
 
 - (void)loadingFailed:(NSString*)error {
   isLoading_ = NO;
   NSLog(@"Page loading failed: %@", error);
+}
+
+- (void)urlChanged:(NSString*)url {
+  if (url == nil) {
+    return;
+  }
+
+  if (currentURL_) {
+    [currentURL_ release];
+  }
+  currentURL_ = [url retain];
+  [self postURLDidChangeNotification];
 }
 
 - (void)dealloc {
@@ -619,18 +677,73 @@ static void InitializeCEFIfNeeded(void) {
   [super dealloc];
 }
 
-- (void)resizeSubviewsWithOldSize:(NSSize)oldSize {
-  [super resizeSubviewsWithOldSize:oldSize];
-  
+- (NSRect)browserChildWindowRect {
+  NSWindow *window;
+  NSView *contentView;
+  NSRect windowRect;
+  CGFloat contentHeight;
+
+  window = [self window];
+  if (window == nil) {
+    return [self bounds];
+  }
+
+  contentView = [window contentView];
+  windowRect = [self convertRect: [self bounds] toView: nil];
+  contentHeight = [contentView bounds].size.height;
+
+  windowRect.origin.y = MAX(0.0, contentHeight - NSMaxY(windowRect));
+  windowRect.size.width = MAX(0.0, windowRect.size.width);
+  windowRect.size.height = MAX(0.0, windowRect.size.height);
+
+  return windowRect;
+}
+
+- (void)browserViewWasResized {
   if (!browser_ || !isInitialized_) {
     return;
   }
-  
+
   CefRefPtr<CefBrowserHost> host = browser_->GetHost();
   if (host) {
-    // Notify CEF of the resize
+#if defined(HAVE_CEF) && defined(__linux__)
+    NSRect windowRect = [self browserChildWindowRect];
+    CefWindowHandle childWindow = host->GetWindowHandle();
+
+    if (childWindow) {
+      if (g_x_display == NULL) {
+        g_x_display = XOpenDisplay(NULL);
+      }
+
+      if (g_x_display != NULL) {
+        XMoveResizeWindow(g_x_display,
+                          childWindow,
+                          (int)windowRect.origin.x,
+                          (int)windowRect.origin.y,
+                          (unsigned int)windowRect.size.width,
+                          (unsigned int)windowRect.size.height);
+        XFlush(g_x_display);
+      }
+    }
+#endif
+    host->NotifyMoveOrResizeStarted();
     host->WasResized();
   }
+}
+
+- (void)setFrame:(NSRect)frameRect {
+  [super setFrame: frameRect];
+  [self browserViewWasResized];
+}
+
+- (void)setFrameSize:(NSSize)newSize {
+  [super setFrameSize: newSize];
+  [self browserViewWasResized];
+}
+
+- (void)resizeSubviewsWithOldSize:(NSSize)oldSize {
+  [super resizeSubviewsWithOldSize:oldSize];
+  [self browserViewWasResized];
 }
 
 - (void)loadRequest:(NSURLRequest*)request {
@@ -702,6 +815,7 @@ static void InitializeCEFIfNeeded(void) {
       [currentURL_ release];
     }
     currentURL_ = [url retain];
+    [self postURLDidChangeNotification];
     return;
   }
   
@@ -716,6 +830,7 @@ static void InitializeCEFIfNeeded(void) {
     [currentURL_ release];
   }
   currentURL_ = [url retain];
+  [self postURLDidChangeNotification];
 }
 
 - (void)reload {
@@ -796,6 +911,9 @@ static void InitializeCEFIfNeeded(void) {
 
 - (NSURL*)mainFrameURL {
   if (!browser_ || !isInitialized_) {
+    if (currentURL_) {
+      return [NSURL URLWithString: currentURL_];
+    }
     return nil;
   }
   
@@ -806,6 +924,12 @@ static void InitializeCEFIfNeeded(void) {
   
   std::string url = frame->GetURL().ToString();
   NSString* urlStr = [NSString stringWithUTF8String:url.c_str()];
+  if (urlStr == nil || [urlStr length] == 0) {
+    if (currentURL_) {
+      return [NSURL URLWithString: currentURL_];
+    }
+    return nil;
+  }
   return [NSURL URLWithString:urlStr];
 }
 

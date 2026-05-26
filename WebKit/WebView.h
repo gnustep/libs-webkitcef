@@ -35,6 +35,9 @@
  */
 typedef void (*WebViewJavaScriptCompletionHandler)(NSString* result, NSError* error);
 
+extern NSString *WebViewURLDidChangeNotification;
+extern NSString *WebViewURLKey;
+
 // WebView interface
 @interface WebView : NSView
 
@@ -65,6 +68,7 @@ typedef void (*WebViewJavaScriptCompletionHandler)(NSString* result, NSError* er
 - (void)loadingStarted;
 - (void)loadingEnded;
 - (void)loadingFailed:(NSString*)error;
+- (void)urlChanged:(NSString*)url;
 
 @end
 

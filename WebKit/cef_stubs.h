@@ -89,6 +89,7 @@ class CefBrowserHost {
   }
 
   void WasResized() {}
+  void NotifyMoveOrResizeStarted() {}
   void CloseBrowser(bool force) {}
 };
 
@@ -123,6 +124,9 @@ class CefClient {
 class CefDisplayHandler {
  public:
   virtual void OnTitleChange(CefRefPtr<CefBrowser> browser, const CefString& title) {}
+  virtual void OnAddressChange(CefRefPtr<CefBrowser> browser,
+                               CefRefPtr<CefFrame> frame,
+                               const CefString& url) {}
 };
 
 class CefLifeSpanHandler {
