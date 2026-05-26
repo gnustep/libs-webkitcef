@@ -26,6 +26,11 @@ This is a test browser running on Linux using GNUstep...
 - `WebKit/bin/install_cef_libs.sh` - installs built CEF libraries into
   `/usr/local/lib`.
 
+## Next steps (no pun intended)
+
+- A palette for Gorm so that this can be wired into a `.gorm` (or other model) file
+  for easy re-use.
+
 ## Requirements
 
 - GNUstep development environment with `gnustep-make`
