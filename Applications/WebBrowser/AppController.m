@@ -12,7 +12,7 @@
 
 @implementation AppController
 
-static const CGFloat URLBarPadding = 8.0;
+static const CGFloat URLBarPadding = 10.0; // 8.0;
 static const CGFloat URLFieldHeight = 24.0;
 
 + (void) initialize
@@ -67,11 +67,11 @@ static const CGFloat URLFieldHeight = 24.0;
     }
 
   appName = [[NSProcessInfo processInfo] processName];
-  mainMenu = [[NSMenu alloc] initWithTitle: @""];
+  mainMenu = [[NSMenu alloc] initWithTitle: @"WebBrowser"];
 
   appMenuItem = [[NSMenuItem alloc] initWithTitle: appName
                                            action: NULL
-                                    keyEquivalent: @""];
+                                    keyEquivalent: @"WebBrowser"];
   [mainMenu addItem: appMenuItem];
   [appMenuItem release];
 
@@ -79,11 +79,11 @@ static const CGFloat URLFieldHeight = 24.0;
   [appMenu addItemWithTitle: [NSString stringWithFormat: @"About %@", appName]
                      action: @selector(orderFrontStandardAboutPanel:)
               keyEquivalent: @""];
-  [appMenu addItem: [NSMenuItem separatorItem]];
+  // [appMenu addItem: [NSMenuItem separatorItem]];
   [appMenu addItemWithTitle: [NSString stringWithFormat: @"Hide %@", appName]
                      action: @selector(hide:)
               keyEquivalent: @"h"];
-  [appMenu addItem: [NSMenuItem separatorItem]];
+  // [appMenu addItem: [NSMenuItem separatorItem]];
   [appMenu addItemWithTitle: [NSString stringWithFormat: @"Quit %@", appName]
                      action: @selector(terminate:)
               keyEquivalent: @"q"];
