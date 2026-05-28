@@ -143,6 +143,24 @@ The public API includes:
 - `mainFrameURL`
 - `mainFrameTitle`
 
+## Advantages
+
+- Familiar Objective-C `WebView` API surface for GNUstep applications.
+- Chromium rendering engine via CEF when available, enabling modern web compatibility.
+- Dual-mode build: compiles with CEF when present and falls back to local stubs when not.
+- Lazy CEF initialization at first use, reducing startup work for apps that do not immediately load web content.
+- Simple GNUstep build integration (`make`, framework target, sample app target).
+- Includes a working sample browser app (`Applications/WebBrowser`) that can be used as a reference.
+
+## Caveats
+
+- Full runtime browsing requires CEF binaries/libraries; stub mode compiles but does not provide a real browser engine.
+- CEF setup and build can take significant time and disk space compared to pure Objective-C frameworks.
+- Runtime linking may require environment setup (for example `LD_LIBRARY_PATH`) or installing CEF libs system-wide.
+- Current integration is primarily tuned for GNUstep/Linux workflows; behavior and packaging on other platforms may need additional adjustments.
+- JavaScript evaluation is currently execute-first; synchronous return values are limited and async completion behavior is basic.
+- Popup/new-window behavior is framework-managed and may differ from desktop browsers depending on app policy.
+
 ## Documentation
 
 Start with these files for more detail:

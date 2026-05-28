@@ -31,7 +31,29 @@
 extern "C" {
 #endif
 
+/**
+ * Handles CEF subprocess execution when the current process was launched as a
+ * Chromium helper process.
+ *
+ * This function inspects the command-line arguments for CEF process role flags
+ * and, when appropriate, dispatches into CEF's process execution path. For a
+ * normal application process it returns without starting a subprocess role.
+ *
+ * The return value follows CEF conventions. A non-negative value indicates the
+ * process was handled as a CEF subprocess and should typically be returned from
+ * main. A negative value indicates normal application startup should continue.
+ */
 int WebKitCEFHandleProcess(int argc, const char **argv);
+
+/**
+ * Executes the CEF subprocess entry point directly.
+ *
+ * This function calls into CEF's subprocess dispatcher for renderer, GPU,
+ * utility, and other Chromium-managed child roles. It is intended for
+ * integration code that already determined the process is a CEF child process.
+ *
+ * The return value is the subprocess exit code returned by CEF.
+ */
 int WebKitCEFExecuteProcess(int argc, const char **argv);
 
 #ifdef __cplusplus
