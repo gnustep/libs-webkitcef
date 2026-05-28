@@ -2,7 +2,8 @@
 
 ## Overview
 
-This document describes the full integration of Chromium Embedded Framework (CEF) with the WebView component, providing a functional webview using CEF for GNUstep applications on macOS.
+This document describes the integration of Chromium Embedded Framework (CEF)
+with the WebView component for GNUstep applications.
 
 ## Architecture
 
@@ -14,7 +15,7 @@ This document describes the full integration of Chromium Embedded Framework (CEF
 
 ### Class Hierarchy
 
-```
+```text
 WebView (Base Class)
 └── GSWebView (Concrete Implementation)
     └── Uses GSCefClient (Event Handler)
@@ -60,7 +61,7 @@ WebView (Base Class)
 - **Load events**: `OnLoadStart`, `OnLoadEnd`, `OnLoadError`
 - **Display events**: Title changes
 - **Lifecycle events**: Browser creation and cleanup
-- **Main thread marshalling** via Grand Central Dispatch
+- **Main thread marshalling** via framework callback dispatch
 
 ### 6. Graphics Rendering
 
@@ -83,11 +84,8 @@ WebView *webView = [[WebView alloc] initWithFrame:CGRectMake(0, 0, 800, 600)];
 // Load HTML
 [webView loadHTMLString:@"<h1>Hello</h1>" baseURL:nil];
 
-// JavaScript execution
-[webView evaluateJavaScript:@"document.title" 
-           completionHandler:^(NSString *result, NSError *error) {
-    NSLog(@"Title: %@", result);
-}];
+// JavaScript execution (fire-and-forget)
+[webView stringByEvaluatingJavaScriptFromString:@"document.title"];
 
 // Navigation
 [webView reload];
@@ -107,10 +105,13 @@ The build system is configured to:
 
 ### Building
 
-```bash
+```sh
 cd /Volumes/heron/Development/libs-webkitcef/WebKit
-make GNUSTEP_MAKEFILES=/path/to/gnustep-make/share/GNUstep/Makefiles
+make
 ```
+
+For full download/build/runtime instructions for CEF, see
+`BUILD_CEF_OPTIONAL.md`.
 
 ## Implementation Details
 

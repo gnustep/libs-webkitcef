@@ -1,110 +1,104 @@
-# Building CEF Libraries (Optional)
+# Building CEF (Download + Build + Runtime Setup)
 
-## Current Status
+This project supports two modes:
 
-The WebView framework is now configured to build with or without CEF libraries:
+- Stub mode: compiles without CEF binaries (no real browser runtime)
+- Full mode: uses Chromium Embedded Framework (CEF) for actual rendering
 
-✅ **Without CEF libs** (current): Framework compiles as header-only wrapper
-📦 **With CEF libs** (optional): Full CEF integration for runtime functionality
+Use this guide to enable full mode.
 
-## Building CEF Libraries (When Ready)
+## Prerequisites
 
-If you want to build the CEF libraries for full runtime support:
+- `git`
+- `python3`
+- `cmake`
+- `make`
+- GNUstep development environment (`gnustep-make`)
 
-### Step 1: Generate Build Files
+## 1) Download and Prepare CEF
 
-```bash
-cd /Volumes/heron/Development/libs-webkitcef/WebKit/cef_build/cef-project/build
-cmake ..
+From the `WebKit` directory:
+
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/WebKit
+./bin/download_cef.sh
 ```
 
-### Step 2: Build CEF
+What this script does:
 
-```bash
+- creates `cef_build/`
+- clones `cef-project`
+- configures CMake in `cef_build/cef-project/build`
+- builds `cefsimple` to fetch and unpack CEF binaries and produce initial artifacts
+
+## 2) Build CEF Libraries
+
+If you want full runtime support, build the CEF project artifacts in Release mode:
+
+```sh
 cd /Volumes/heron/Development/libs-webkitcef/WebKit/cef_build/cef-project/build
-make -j$(nproc)
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+make -j4
 ```
 
-This will take 10-30 minutes depending on your system.
+Expected key output locations:
 
-### Step 3: Rebuild WebView (After CEF is Built)
+- `cef_build/cef-project/third_party/cef/cef_binary_*/include`
+- `cef_build/cef-project/third_party/cef/cef_binary_*/Release/libcef.so`
+- `cef_build/cef-project/build/libcef_dll_wrapper/Release/`
 
-```bash
+## 3) Rebuild the Framework with CEF Enabled
+
+```sh
 cd /Volumes/heron/Development/libs-webkitcef/WebKit
 make clean
 make
 ```
 
-The build system will automatically detect the CEF libraries and link them.
+The makefiles auto-detect CEF headers/libraries and switch from stub mode to
+full CEF mode.
 
-## Current Build Configuration
+## 4) Make Libraries Available at Runtime
 
-The `GNUmakefile.preamble` now:
+Option A (session-local):
 
-```makefile
-# Check if CEF libraries have been built
-ifneq ($(wildcard $(CEF_LIB_DIR)/libcef.a),)
-  # Link CEF if libraries exist
-  ADDITIONAL_LDFLAGS += -L$(CEF_LIB_DIR) -L$(CEF_DLL_WRAPPER_DIR) -lcef -lcef_dll_wrapper
-else
-  # Skip linking, just include headers
-  $(warning CEF libraries not found. WebView will compile header-only.)
-endif
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/WebKit
+source ./webkit-env.sh
 ```
 
-This makes the CEF libraries optional while preserving the full implementation when they're available.
+Option B (system install):
 
-## Usage
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/WebKit
+./bin/install_cef_libs.sh
+```
 
-### Without CEF Libraries
+## 5) Verify Your Build Mode
 
-- WebView framework compiles and installs
-- Applications can use basic WebView interface
-- Runtime behavior limited to method stubs
-
-### With CEF Libraries
-
-- WebView framework compiles with full CEF integration
-- Applications get full web browsing functionality
-- Can load URLs, execute JavaScript, navigate history, etc.
-
-## What's Inside
-
-- **WebView.h** - Public API (always available)
-- **WebView.mm** - CEF integration code (compiles either way)
-- **CEF headers** - Included from cef_build/cef-project/include
-- **CEF libraries** - Linked if available at $(CEF_LIB_DIR)
+When CEF is missing, build output warns that stubs are being used.
+When CEF is found, the framework links against CEF libraries and provides real
+browser functionality.
 
 ## Troubleshooting
 
-### Build fails with "CMake not found"
+### CEF binary folder not found
 
-```bash
-# Install CMake
-brew install cmake
-# or use your package manager
+Run the download step again:
+
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/WebKit
+./bin/download_cef.sh
 ```
 
-### Build takes too long
+### Framework builds but app cannot load `libcef.so`
 
-- CEF builds take 10-30 minutes
-- You can parallelize with `-j$(nproc)` (default in our command)
-- Or `-j4` for specific number of cores
+Use one of:
 
-### "linker" input unused warning
+- `source ./webkit-env.sh`
+- `./bin/install_cef_libs.sh`
 
-- This is from CEF build configuration
-- Not an error, can be ignored
-- Will disappear after CEF is properly built
+### Build is too slow
 
-## Next Steps
-
-1. **Now**: Framework compiles successfully ✅
-2. **Later (optional)**: Build CEF libraries for full functionality
-3. **Deploy**: Install the framework to /Library/Frameworks/
-
-The modular approach allows you to:
-
-- Develop against the interface immediately
-- Add CEF runtime support whenever ready
-- Test both configurations
+Use fewer jobs for low-memory systems (for example `make -j2`) or higher jobs
+on larger machines.

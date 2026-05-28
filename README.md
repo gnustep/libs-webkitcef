@@ -166,10 +166,9 @@ The public API includes:
 Start with these files for more detail:
 
 - `WebKit/Documentation/QUICK_START.md`
-- `WebKit/Documentation/CEF_INTEGRATION_GUIDE.md`
 - `WebKit/Documentation/BUILD_CEF_OPTIONAL.md`
 - `WebKit/Documentation/BUILD_APPLICATIONS.md`
-- `WebKit/Documentation/LINKER_ERROR_QUICK_FIX.md`
+- `WebKit/Documentation/CEF_INTEGRATION_GUIDE.md`
 
 ## Troubleshooting
 

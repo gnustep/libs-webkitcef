@@ -1,175 +1,71 @@
-# WebKit Application Build Guide
+# Building Applications Against WebKit
 
-## Issue: "cannot find -lcef" when building WebBrowser
+This guide covers building apps that link to the WebKit framework in this repo,
+including full CEF runtime support.
 
-This happens when CEF libraries haven't been built yet. You have several options:
+## 1) Build WebKit
 
-## Option 1: Source the Environment Script (Easiest)
-
-Before building your WebBrowser application, source the webkit environment script:
-
-```bash
-cd /path/to/WebKit
-source ./webkit-env.sh
-cd /path/to/WebBrowser
-make
-```
-
-This sets `LD_LIBRARY_PATH` to include potential CEF library locations.
-
-## Option 2: Install CEF Libraries to System Location
-
-If you've built CEF and want to avoid `LD_LIBRARY_PATH` hacks:
-
-```bash
-cd /path/to/WebKit
-./bin/install_cef_libs.sh
-```
-
-This copies CEF libraries to `/usr/local/lib` where the linker can find them. Then rebuild your application:
-
-```bash
-cd /path/to/WebBrowser
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/WebKit
 make clean
 make
 ```
 
-## Option 3: Build CEF First (Recommended for Production)
+## 2) Download and Build CEF (Full Runtime)
 
-For production use, build CEF with full functionality:
+If you need real browser rendering, run:
 
-```bash
-cd /path/to/WebKit/cef_build/cef-project/build
-cmake ..
-make -j$(nproc)
-```
-
-This takes 10-30 minutes. After it completes:
-
-1. Rebuild WebKit to link CEF libraries:
-
-   ```bash
-   cd /path/to/WebKit
-   make clean
-   make install
-   ```
-
-2. Rebuild your WebBrowser application:
-
-   ```bash
-   cd /path/to/WebBrowser
-   make clean
-   make install
-   ```
-
-## Option 4: Modify Your WebBrowser GNUmakefile
-
-If you want more control over linking, add this to your WebBrowser's GNUmakefile.preamble:
-
-```makefile
-# Optional CEF libraries - only link if available
-CEF_PATH ?= ../WebKit/cef_build/cef-project
-CEF_BINARY_PATH = $(wildcard $(CEF_PATH)/third_party/cef/cef_binary_*)
-CEF_LIB_DIR = $(wildcard $(CEF_PATH)/third_party/cef/cef_binary_*/Release)
-
-ifneq ($(wildcard $(CEF_LIB_DIR)/libcef.so),)
-  # CEF libraries exist - link them
-  WebBrowser_LIBS += -L$(CEF_LIB_DIR) -lcef -lvk_swiftshader
-  # Also try /usr/local/lib
-else ifneq ($(wildcard /usr/local/lib/libcef.so),)
-  # System-installed CEF
-  WebBrowser_LIBS += -L/usr/local/lib -lcef -lvk_swiftshader
-else
-  # CEF not available - build without it
-  $(warning CEF libraries not found. WebView will compile without CEF runtime.)
-endif
-```
-
-## Current Status
-
-- ✅ WebKit compiles successfully
-- ⏳ CEF libraries not built (optional step)
-- ⚠️ Applications linking WebKit need CEF libraries available
-
-## Next Steps
-
-### For Immediate Use (Without CEF Runtime)
-
-```bash
-source ./webkit-env.sh
-cd ../WebBrowser
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/WebKit
+./bin/download_cef.sh
+cd cef_build/cef-project/build
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
+make -j4
+cd ../../..
+make clean
 make
-./WebBrowser.app/WebBrowser
 ```
 
-### For Full CEF Functionality
+For additional details, see [BUILD_CEF_OPTIONAL.md](BUILD_CEF_OPTIONAL.md).
 
-```bash
-# Build CEF (takes time)
-cd ./cef_build/cef-project/build && cmake .. && make -j$(nproc)
+## 3) Build the Sample App
 
-# Install CEF libraries
-cd ../../.. && ./bin/install_cef_libs.sh
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/Applications/WebBrowser
+make clean
+make
+```
 
-# Rebuild everything
-make clean && make install
-cd ../WebBrowser && make clean && make install
+## 4) Runtime Library Resolution
+
+If the app fails to start due to missing CEF shared libraries, choose one:
+
+Option A: source environment helper
+
+```sh
+source /Volumes/heron/Development/libs-webkitcef/WebKit/webkit-env.sh
+```
+
+Option B: install CEF libs system-wide
+
+```sh
+cd /Volumes/heron/Development/libs-webkitcef/WebKit
+./bin/install_cef_libs.sh
 ```
 
 ## Troubleshooting
 
-### Still getting "cannot find -lcef"?
+### Linker cannot find `-lcef`
 
-1. Check if CEF was built:
+- Verify `libcef.so` exists under `WebKit/cef_build/cef-project/third_party/cef/cef_binary_*/Release/`
+- Rebuild `WebKit` after CEF build completes
+- Use `source WebKit/webkit-env.sh` before launching the app
 
-   ```bash
-   find ./cef_build -name "libcef.so" -o -name "libcef.a"
-   ```
+### App launches but browser surface is blank
 
-2. Check if libraries are in /usr/local/lib:
+- Confirm app has access to CEF resources and locales in the CEF binary tree
+- Confirm runtime library path includes the CEF `Release` directory
 
-   ```bash
-   ls -la /usr/local/lib/libcef*
-   ```
+### You only need compile-time API checks
 
-3. Set LD_LIBRARY_PATH manually:
-
-   ```bash
-   export LD_LIBRARY_PATH=/usr/local/lib:$(find ./cef_build -type d -name Release | head -1):$LD_LIBRARY_PATH
-   ```
-
-4. Check linker configuration:
-
-   ```bash
-   ldconfig -p | grep libcef
-   ```
-
-### "undefined reference to `CefInitialize'"?
-
-This means WebKit was compiled with CEF headers (HAVE_CEF=1) but CEF libraries aren't available. Either:
-
-1. Build CEF libraries (see "For Full CEF Functionality" above)
-2. Rebuild WebKit without CEF headers:
-
-   ```bash
-   cd WebKit
-   rm -rf obj/
-   make clean
-   make
-   ```
-
-### Runtime error about missing libcef.so?
-
-Set `LD_LIBRARY_PATH` when running:
-
-```bash
-export LD_LIBRARY_PATH=/usr/local/lib:$LD_LIBRARY_PATH
-./WebBrowser.app/WebBrowser
-```
-
-Or use the environment script:
-
-```bash
-source ./webkit-env.sh
-./WebBrowser.app/WebBrowser
-```
+Building without CEF is supported via stubs, but runtime browser functionality is not available in that mode.
