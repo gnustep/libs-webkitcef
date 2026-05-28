@@ -31,6 +31,7 @@
 extern "C" {
 #endif
 
+int WebKitCEFHandleProcess(int argc, const char **argv);
 int WebKitCEFExecuteProcess(int argc, const char **argv);
 
 #ifdef __cplusplus

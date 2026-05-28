@@ -296,6 +296,20 @@ class GSCefApp : public CefApp, public CefBrowserProcessHandler {
 }
 @end
 
+extern "C" int WebKitCEFExecuteProcess(int argc, const char **argv);
+
+extern "C" int WebKitCEFHandleProcess(int argc, const char **argv) {
+  int i;
+
+  for (i = 1; i < argc; i++) {
+    if (strncmp(argv[i], "--type=", 7) == 0) {
+      return WebKitCEFExecuteProcess(argc, argv);
+    }
+  }
+
+  return -1;
+}
+
 extern "C" int WebKitCEFExecuteProcess(int argc, const char **argv) {
   CefMainArgs main_args(argc, const_cast<char**>(argv));
   CefRefPtr<CefApp> app = new GSCefApp();
