@@ -9,3 +9,11 @@ obj
 *~
 derived_src
 *.generated
+.agents
+.codex
+*.log
+*.vspscc
+*.vssscc
+*.suo
+*.user
+*.userosscache
