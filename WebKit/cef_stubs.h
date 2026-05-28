@@ -12,6 +12,7 @@ typedef int cef_log_severity_t;
 typedef void* CefCursorHandle;
 typedef int TransitionType;
 typedef int ErrorCode;
+typedef int WindowOpenDisposition;
 
 class CefApp;
 class CefBrowser;
@@ -27,6 +28,7 @@ class CefLifeSpanHandler;
 class CefLoadHandler;
 class CefRequestContext;
 class CefV8Value;
+class CefPopupFeatures;
 
 template <class T>
 class CefRefPtr {
@@ -132,9 +134,23 @@ class CefDisplayHandler {
 class CefLifeSpanHandler {
  public:
   virtual void OnAfterCreated(CefRefPtr<CefBrowser> browser) {}
+  virtual bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                             CefRefPtr<CefFrame> frame,
+                             const CefString& target_url,
+                             const CefString& target_frame_name,
+                             WindowOpenDisposition target_disposition,
+                             bool user_gesture,
+                             const CefPopupFeatures& popupFeatures,
+                             class CefWindowInfo& window_info,
+                             CefRefPtr<CefClient>& client,
+                             class CefBrowserSettings& settings,
+                             CefRefPtr<CefDictionaryValue>& extra_info,
+                             bool* no_javascript_access) { return false; }
   virtual bool DoClose(CefRefPtr<CefBrowser> browser) { return false; }
   virtual void OnBeforeClose(CefRefPtr<CefBrowser> browser) {}
 };
+
+class CefPopupFeatures {};
 
 class CefLoadHandler {
  public:

@@ -91,6 +91,8 @@ class GSCefClient : public CefClient,
                    public CefLifeSpanHandler,
                    public CefLoadHandler {
  public:
+  using CefLifeSpanHandler::OnBeforePopup;
+
   explicit GSCefClient(WebView* view) 
     : web_view_(view), 
       browser_(),
@@ -138,6 +140,52 @@ class GSCefClient : public CefClient,
                                   withObject: nil
                                waitUntilDone: NO];
     }
+  }
+
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     WindowOpenDisposition target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) {
+    return HandlePopupInCurrentView(browser, target_url);
+  }
+
+  bool OnBeforePopup(CefRefPtr<CefBrowser> browser,
+                     CefRefPtr<CefFrame> frame,
+                     int popup_id,
+                     const CefString& target_url,
+                     const CefString& target_frame_name,
+                     WindowOpenDisposition target_disposition,
+                     bool user_gesture,
+                     const CefPopupFeatures& popupFeatures,
+                     CefWindowInfo& windowInfo,
+                     CefRefPtr<CefClient>& client,
+                     CefBrowserSettings& settings,
+                     CefRefPtr<CefDictionaryValue>& extra_info,
+                     bool* no_javascript_access) {
+    return HandlePopupInCurrentView(browser, target_url);
+  }
+
+  bool HandlePopupInCurrentView(CefRefPtr<CefBrowser> browser,
+                                const CefString& target_url) {
+    // Keep target=_blank and window.open() navigation in the same browser.
+    std::string url = target_url.ToString();
+    if (!url.empty() && browser) {
+      CefRefPtr<CefFrame> mainFrame = browser->GetMainFrame();
+      if (mainFrame) {
+        mainFrame->LoadURL(target_url);
+      }
+    }
+
+    // Return true to cancel popup creation.
+    return true;
   }
 
   bool DoClose(CefRefPtr<CefBrowser> browser) override {
