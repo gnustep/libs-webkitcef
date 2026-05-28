@@ -1,9 +1,9 @@
 /* 
-   Project: WebStep
+   Project: WebBrowser
 
-   Author: Gregory John Casamento
+   Author: Gregory John Casamento,,,
 
-   Created: 2026-05-28 04:32:27 -0400 by heron
+   Created: 2025-07-14 07:25:29 -0400 by heron
    
    Application Controller
 */
@@ -38,17 +38,81 @@
 
 - (void) dealloc
 {
+  [[NSNotificationCenter defaultCenter] removeObserver: self];
   [super dealloc];
+}
+
+- (IBAction) foward: (id)sender
+{
+  [_webView goForward];
+}
+
+- (IBAction) back: (id)sender
+{
+  [_webView goBack];
 }
 
 - (void) awakeFromNib
 {
 }
 
+- (NSString *) normalizedURLStringFromString: (NSString *)urlString
+{
+  NSString *trimmedString;
+  NSCharacterSet *whitespace;
+
+  whitespace = [NSCharacterSet whitespaceAndNewlineCharacterSet];
+  trimmedString = [urlString stringByTrimmingCharactersInSet: whitespace];
+
+  if ([trimmedString length] == 0)
+    {
+      return nil;
+    }
+
+  if ([trimmedString rangeOfString: @"://"].location == NSNotFound
+      && [trimmedString rangeOfString: @":"].location == NSNotFound)
+    {
+      return [@"https://" stringByAppendingString: trimmedString];
+    }
+
+  return trimmedString;
+}
+
+- (void) updateURLFieldFromWebView
+{
+  NSString *urlString;
+
+  urlString = [[_webView mainFrameURL] absoluteString];
+  if (urlString == nil)
+    {
+      urlString = @"";
+    }
+
+  [_urlField setStringValue: urlString];
+}
+
 - (void) applicationDidFinishLaunching: (NSNotification *)aNotif
 {
-// Uncomment if your application is Renaissance-based
-//  [NSBundle loadGSMarkupNamed: @"Main" owner: self];
+  NSString *demoPath = @"https://www.google.com";
+
+  if (_window == nil)
+    {
+      [_window setTitle: @"NetStep"];
+    }
+
+  [_window makeKeyAndOrderFront: self];
+  [NSApp activateIgnoringOtherApps: YES];
+
+  if (demoPath != nil)
+    {
+      [_webView loadURL: [[NSURL fileURLWithPath: demoPath] absoluteString]];
+    }
+  else
+    {
+      [_webView loadURL: @"https://example.com"];
+    }
+
+  [self updateURLFieldFromWebView];
 }
 
 - (BOOL) applicationShouldTerminate: (id)sender
@@ -70,4 +134,37 @@
 {
 }
 
+- (IBAction) urlFieldDidReturn: (id)sender
+{
+  NSString *urlString;
+
+  urlString = [self normalizedURLStringFromString: [_urlField stringValue]];
+  if (urlString == nil)
+    {
+      return;
+    }
+
+  [_urlField setStringValue: urlString];
+  [_webView loadURL: urlString];
+}
+
+- (void) webViewURLDidChange: (NSNotification *)notification
+{
+  NSString *urlString;
+
+  urlString = [[notification userInfo] objectForKey: WebViewURLKey];
+  if (urlString == nil)
+    {
+      [self updateURLFieldFromWebView];
+      return;
+    }
+
+  [_urlField setStringValue: urlString];
+}
+
+- (void) windowDidResize: (NSNotification *)notification
+{
+}
+
 @end
+

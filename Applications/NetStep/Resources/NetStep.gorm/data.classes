@@ -2,15 +2,23 @@
     "## Comment" = "Do NOT change this file, Gorm maintains it";
     AppController = {
 	Actions = (
-	    "showPrefPanel:"
+	    "showPrefPanel:",
+	    "forward:",
+	    "back:"
 	);
 	Outlets = (
-	    "_window"
+	    "_window",
+	    "_urlField",
+	    "_webView",
+	    "_backButton",
+	    "_forwardButton"
 	);
 	Super = NSObject;
     };
     FirstResponder = {
 	Actions = (
+	    "forward:",
+	    "back:",
 	    "orderFrontFontPanel:",
 	    "showPrefPanel:"
 	);
