@@ -25,7 +25,7 @@ include $(GNUSTEP_MAKEFILES)/common.make
 VERSION = 0.1
 PACKAGE_NAME = NetStep
 APP_NAME = NetStep
-NetStep_APPLICATION_ICON = 
+NetStep_APPLICATION_ICON = netstep_icon.png
 
 
 #
@@ -38,7 +38,7 @@ NetStep_APPLICATION_ICON =
 #
 NetStep_RESOURCE_FILES = \
 Resources/NetStep.gorm \
-
+Resources/netstep_icon.png
 
 #
 # Header files

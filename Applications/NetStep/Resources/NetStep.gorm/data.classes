@@ -5,7 +5,9 @@
 	    "showPrefPanel:",
 	    "forward:",
 	    "back:",
-	    "urlFieldDidReturn:"
+	    "urlFieldDidReturn:",
+	    "reload:",
+	    "stop:"
 	);
 	Outlets = (
 	    "_window",
@@ -20,9 +22,11 @@
 	Actions = (
 	    "back:",
 	    "forward:",
-	    "urlFieldDidReturn:",
+	    "reload:",
+	    "newAction:",
 	    "orderFrontFontPanel:",
-	    "showPrefPanel:"
+	    "showPrefPanel:",
+	    "urlFieldDidReturn:"
 	);
 	Super = NSObject;
     };

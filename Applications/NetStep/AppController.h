@@ -11,10 +11,10 @@
 #ifndef _PCAPPPROJ_APPCONTROLLER_H
 #define _PCAPPPROJ_APPCONTROLLER_H
 
+#import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
+
 #import <WebKit/WebKit.h>
-// Uncomment if your application is Renaissance-based
-//#import <Renaissance/Renaissance.h>
 
 @interface AppController : NSObject
 {

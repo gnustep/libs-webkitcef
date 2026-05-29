@@ -52,6 +52,16 @@
   [_webView goBack];
 }
 
+- (IBAction) reload: (id)sender
+{
+  [_webView reload];
+}
+
+- (IBAction) stop: (id)sender
+{
+  [_webView stopLoading];
+}
+
 - (void) awakeFromNib
 {
 }
@@ -93,7 +103,8 @@
 
 - (void) applicationDidFinishLaunching: (NSNotification *)aNotif
 {
-  NSString *demoPath = @"https://www.google.com";
+  NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
+  NSString *demoPath = [defaults objectForKey: @"homePage"];
 
   if (_window == nil)
     {
@@ -105,11 +116,11 @@
 
   if (demoPath != nil)
     {
-      [_webView loadURL: [[NSURL fileURLWithPath: demoPath] absoluteString]];
+      [_webView loadURL: demoPath];
     }
   else
     {
-      [_webView loadURL: @"https://example.com"];
+      [_webView loadURL: @"https://google.com"];
     }
 
   [self updateURLFieldFromWebView];
@@ -127,7 +138,24 @@
 - (BOOL) application: (NSApplication *)application
 	    openFile: (NSString *)fileName
 {
-  return NO;
+  BOOL result = NO;
+  NSLog(@"Opening file %@", fileName);
+  if ([fileName hasPrefix: @"http"])
+    {
+      NSLog(@"Opening as a web page");
+      [_webView loadURL: fileName];
+      [self updateURLFieldFromWebView];
+      result = YES;
+    }
+  else
+    {
+      NSLog(@"Opening as a file");
+      NSString *path = [[NSURL fileURLWithPath: fileName] absoluteString];
+      [_webView loadURL: path];
+      [self updateURLFieldFromWebView];
+      result = YES;
+    }
+  return result;
 }
 
 - (IBAction) showPrefPanel: (id)sender
@@ -146,6 +174,7 @@
 
   [_urlField setStringValue: urlString];
   [_webView loadURL: urlString];
+  [_window setTitle: urlString];
 }
 
 - (void) webViewURLDidChange: (NSNotification *)notification

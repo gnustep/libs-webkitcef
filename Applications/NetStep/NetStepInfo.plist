@@ -9,5 +9,15 @@
     NSExecutable = NetStep;
     NSMainNibFile = "NetStep.gorm";
     NSPrincipalClass = NSApplication;
-    NSRole = Application;
+    ApplicationIcon = "netstep_icon.png";
+    NSIcon = "netstep_icon.png";
+    NSTypes = (
+        {
+		NSName = "NetStepHtmlDocument";
+		NSHumanReadableName = "HTML Document";
+		NSUnixExtensions = ("html", "htm", "xml");
+		NSRole = Viewer;
+		NSIcon = "netstep_icon.png";
+    	}
+    );
 }
