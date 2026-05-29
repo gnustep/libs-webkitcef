@@ -33,7 +33,14 @@ Showing GNUstep
 ## Next steps (no pun intended)
 
 - A palette for Gorm so that this can be wired into a `.gorm` (or other model) file
-  for easy re-use.
+  for easy re-use.  It might not be necessary to do this as there are no "actions" or "outlets" declared in
+  the WebView.h.  The workaround is to make a WebView using the CustomView in Gorm.
+
+## Generative AI disclosure
+
+This project was started about 1-2 years ago, but there were issues I couldn't figure out so it stalled.  As it turns out
+codex (OpenAI's tool) was instrumental in helping me to figure out how to fix some of the issues that were responsible for
+causing a difficult to find crash.
 
 ## Requirements
 
