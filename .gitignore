@@ -17,3 +17,4 @@ derived_src
 *.suo
 *.user
 *.userosscache
+.DS_Store
