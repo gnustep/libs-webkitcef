@@ -3,21 +3,26 @@
     ApplicationDescription = "No description avaliable!";
     ApplicationName = NetStep;
     ApplicationRelease = "0.1";
+    ApplicationIcon = "netstep_icon.png";
+    ApplicationDescription = "NetStep is a GNUstep based web browser that uses CEF on the backend";
+    Authors = ("Gregory John Casamento <greg.casamento@gmail.com>");
+    
     Copyright = "Copyright (C) 200x";
-    CopyrightDescription = "Released under ...";
+    CopyrightDescription = "Released under the GNU General Public License 3.0";
     FullVersionID = "0.1";
+
     NSExecutable = NetStep;
     NSMainNibFile = "NetStep.gorm";
     NSPrincipalClass = NSApplication;
-    ApplicationIcon = "netstep_icon.png";
     NSIcon = "netstep_icon.png";
     NSTypes = (
         {
-		NSName = "NetStepHtmlDocument";
+		NSName = "NetStepHTMLDocument";
 		NSHumanReadableName = "HTML Document";
 		NSUnixExtensions = ("html", "htm", "xml");
 		NSRole = Viewer;
 		NSIcon = "netstep_icon.png";
+		NSDocumentClass = NetStepHTMLDocument;
     	}
     );
 }

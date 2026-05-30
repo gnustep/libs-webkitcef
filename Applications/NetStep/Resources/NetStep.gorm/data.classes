@@ -2,39 +2,16 @@
     "## Comment" = "Do NOT change this file, Gorm maintains it";
     AppController = {
 	Actions = (
-	    "showPrefPanel:",
-	    "forward:",
-	    "back:",
-	    "urlFieldDidReturn:",
-	    "reload:",
-	    "stop:"
+	    "showPrefPanel:"
 	);
 	Outlets = (
-	    "_window",
-	    "_urlField",
-	    "_webView",
-	    "_backButton",
-	    "_forwardButton"
 	);
 	Super = NSObject;
     };
     FirstResponder = {
 	Actions = (
-	    "back:",
-	    "forward:",
-	    "reload:",
-	    "newAction:",
-	    "orderFrontFontPanel:",
-	    "showPrefPanel:",
-	    "urlFieldDidReturn:"
+	    "showPrefPanel:"
 	);
 	Super = NSObject;
-    };
-    WebView = {
-	Actions = (
-	);
-	Outlets = (
-	);
-	Super = NSView;
     };
 }

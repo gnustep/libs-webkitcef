@@ -38,19 +38,24 @@ NetStep_APPLICATION_ICON = netstep_icon.png
 #
 NetStep_RESOURCE_FILES = \
 Resources/NetStep.gorm \
+Resources/NetStepWindowController.gorm \
 Resources/netstep_icon.png
 
 #
 # Header files
 #
 NetStep_HEADER_FILES = \
-AppController.h
+AppController.h \
+NetStepHTMLDocument.h \
+NetStepWindowController.h
 
 #
 # Objective-C Class files
 #
 NetStep_OBJC_FILES = \
-AppController.m
+AppController.m \
+NetStepHTMLDocument.m \
+NetStepWindowController.m
 
 #
 # Other sources

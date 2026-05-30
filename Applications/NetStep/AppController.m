@@ -19,10 +19,8 @@
   /*
    * Register your app's defaults here by adding objects to the
    * dictionary, eg
-   *
-   * [defaults setObject:anObject forKey:keyForThatObject];
-   *
    */
+  [defaults setObject:@"https://www.google.com" forKey: @"homePage"];
   
   [[NSUserDefaults standardUserDefaults] registerDefaults: defaults];
   [[NSUserDefaults standardUserDefaults] synchronize];
@@ -36,73 +34,19 @@
   return self;
 }
 
+- (IBAction) showPrefPanel: (id)sender
+{
+}
+
 - (void) dealloc
 {
   [[NSNotificationCenter defaultCenter] removeObserver: self];
   [super dealloc];
 }
 
-- (IBAction) foward: (id)sender
-{
-  [_webView goForward];
-}
-
-- (IBAction) back: (id)sender
-{
-  [_webView goBack];
-}
-
-- (IBAction) reload: (id)sender
-{
-  [_webView reload];
-}
-
-- (IBAction) stop: (id)sender
-{
-  [_webView stopLoading];
-}
-
-- (void) awakeFromNib
-{
-}
-
-- (NSString *) normalizedURLStringFromString: (NSString *)urlString
-{
-  NSString *trimmedString;
-  NSCharacterSet *whitespace;
-
-  whitespace = [NSCharacterSet whitespaceAndNewlineCharacterSet];
-  trimmedString = [urlString stringByTrimmingCharactersInSet: whitespace];
-
-  if ([trimmedString length] == 0)
-    {
-      return nil;
-    }
-
-  if ([trimmedString rangeOfString: @"://"].location == NSNotFound
-      && [trimmedString rangeOfString: @":"].location == NSNotFound)
-    {
-      return [@"https://" stringByAppendingString: trimmedString];
-    }
-
-  return trimmedString;
-}
-
-- (void) updateURLFieldFromWebView
-{
-  NSString *urlString;
-
-  urlString = [[_webView mainFrameURL] absoluteString];
-  if (urlString == nil)
-    {
-      urlString = @"";
-    }
-
-  [_urlField setStringValue: urlString];
-}
-
 - (void) applicationDidFinishLaunching: (NSNotification *)aNotif
 {
+  /*
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   NSString *demoPath = [defaults objectForKey: @"homePage"];
 
@@ -124,6 +68,7 @@
     }
 
   [self updateURLFieldFromWebView];
+  */
 }
 
 - (BOOL) applicationShouldTerminate: (id)sender
@@ -135,6 +80,7 @@
 {
 }
 
+/*
 - (BOOL) application: (NSApplication *)application
 	    openFile: (NSString *)fileName
 {
@@ -157,43 +103,7 @@
     }
   return result;
 }
-
-- (IBAction) showPrefPanel: (id)sender
-{
-}
-
-- (IBAction) urlFieldDidReturn: (id)sender
-{
-  NSString *urlString;
-
-  urlString = [self normalizedURLStringFromString: [_urlField stringValue]];
-  if (urlString == nil)
-    {
-      return;
-    }
-
-  [_urlField setStringValue: urlString];
-  [_webView loadURL: urlString];
-  [_window setTitle: urlString];
-}
-
-- (void) webViewURLDidChange: (NSNotification *)notification
-{
-  NSString *urlString;
-
-  urlString = [[notification userInfo] objectForKey: WebViewURLKey];
-  if (urlString == nil)
-    {
-      [self updateURLFieldFromWebView];
-      return;
-    }
-
-  [_urlField setStringValue: urlString];
-}
-
-- (void) windowDidResize: (NSNotification *)notification
-{
-}
+*/
 
 @end
 
