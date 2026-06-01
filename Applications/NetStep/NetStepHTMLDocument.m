@@ -35,4 +35,25 @@
   [self addWindowController: wc];
 }
 
+/*
+- (NSString *) windowNibName
+{
+  return @"NetStepWindowController";
+}
+*/
+
+- (void) windowControllerDidLoadNib
+{
+  NSLog(@"windowControllerDidLoadNib = %@", _url);
+}
+
+- (BOOL) readFromURL: (NSURL *)url
+	      ofType: (NSString *)typeName
+	       error: (NSError **)error
+{
+  NSLog(@"Read from URL %@", url);
+  ASSIGN(_url, url);
+  return YES;
+}
+
 @end

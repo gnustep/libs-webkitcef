@@ -36,7 +36,9 @@ extern "C" {
 
 GS_EXPORT_CLASS
 @interface NetStepHTMLDocument : NSDocument
-
+{
+  NSURL *_url;
+}
 @end
 
 #if	defined(__cplusplus)
