@@ -45,18 +45,21 @@ GS_EXPORT_CLASS
   IBOutlet NSButton    *_fwdButton;
   IBOutlet NSButton    *_stopButton;
   IBOutlet NSButton    *_reloadButton;
+
+  NSURL *_url;
 }
 
 - (void) awakeFromNib;
 - (void) updateURLFieldFromWebView;
 - (NSString *) normalizedURLStringFromString: (NSString *)urlString;
-
+- (void) setURL: (NSURL *)url;
+  
 - (IBAction) foward: (id)sender;
 - (IBAction) back: (id)sender;
 - (IBAction) reload: (id)sender;
 - (IBAction) stop: (id)sender;
-
 - (IBAction) urlFieldDidReturn: (id)sender;
+
 - (void) webViewURLDidChange: (NSNotification *)notification;
 
 @end

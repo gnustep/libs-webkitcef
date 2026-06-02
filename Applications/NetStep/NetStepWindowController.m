@@ -30,6 +30,7 @@
 {
   if (self = [super init])
     {
+      _url = nil;
     }
   return self;
 }
@@ -54,8 +55,9 @@
   [_webView stopLoading];
 }
 
-- (void) awakeFromNib
+- (void) setURL: (NSURL *)url
 {
+  ASSIGN(_url, url);
 }
 
 - (NSString *) normalizedURLStringFromString: (NSString *)urlString
@@ -106,7 +108,6 @@
 
   [_urlField setStringValue: urlString];
   [_webView loadURL: urlString];
-  // [_window setTitle: urlString];
 }
 
 - (void) webViewURLDidChange: (NSNotification *)notification
@@ -125,6 +126,19 @@
 
 - (void) windowDidResize: (NSNotification *)notification
 {
+}
+
+- (void) awakeFromNib
+{
+  NSString *urlString = nil;
+
+  if (_url != nil)
+    {
+      urlString = [_url absoluteString];
+    }
+
+  [_urlField setStringValue: urlString];
+  [_webView loadURL: urlString];
 }
 
 @end

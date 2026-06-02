@@ -32,19 +32,10 @@
   NetStepWindowController *wc =
     [[NetStepWindowController alloc] initWithWindowNibName:
 				       @"NetStepWindowController"];
+
+  NSLog(@"URL = %@, wc = %@", _url, wc);
   [self addWindowController: wc];
-}
-
-/*
-- (NSString *) windowNibName
-{
-  return @"NetStepWindowController";
-}
-*/
-
-- (void) windowControllerDidLoadNib
-{
-  NSLog(@"windowControllerDidLoadNib = %@", _url);
+  [wc setURL: _url];
 }
 
 - (BOOL) readFromURL: (NSURL *)url
