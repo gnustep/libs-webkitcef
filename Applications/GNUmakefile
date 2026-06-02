@@ -12,7 +12,6 @@ include $(GNUSTEP_MAKEFILES)/common.make
 
 # Generator bundles
 SUBPROJECTS = \
-	WebBrowser \
 	NetStep
 
 #
