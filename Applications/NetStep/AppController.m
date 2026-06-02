@@ -9,6 +9,7 @@
 */
 
 #import "AppController.h"
+#import "NetStepHTMLDocument.h"
 
 @implementation AppController
 
@@ -46,29 +47,22 @@
 
 - (void) applicationDidFinishLaunching: (NSNotification *)aNotif
 {
-  /*
   NSUserDefaults *defaults = [NSUserDefaults standardUserDefaults];
   NSString *demoPath = [defaults objectForKey: @"homePage"];
+  NSURL *url = [NSURL URLWithString: demoPath];
 
-  if (_window == nil)
+  NSLog(@"url = %@", url);
+  if (url != nil)
     {
-      [_window setTitle: @"NetStep"];
-    }
+      NSDocumentController *controller = [NSDocumentController sharedDocumentController];
+      NetStepHTMLDocument *doc = [[NetStepHTMLDocument alloc] init];
 
-  [_window makeKeyAndOrderFront: self];
-  [NSApp activateIgnoringOtherApps: YES];
+      [controller addDocument: doc];
 
-  if (demoPath != nil)
-    {
-      [_webView loadURL: demoPath];
+      [doc setURL: url];
+      [doc makeWindowControllers];
+      [doc showWindows];
     }
-  else
-    {
-      [_webView loadURL: @"https://google.com"];
-    }
-
-  [self updateURLFieldFromWebView];
-  */
 }
 
 - (BOOL) applicationShouldTerminate: (id)sender

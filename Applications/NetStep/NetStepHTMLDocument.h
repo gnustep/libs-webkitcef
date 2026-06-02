@@ -39,6 +39,9 @@ GS_EXPORT_CLASS
 {
   NSURL *_url;
 }
+
+- (void) setURL: (NSURL *)url;
+
 @end
 
 #if	defined(__cplusplus)

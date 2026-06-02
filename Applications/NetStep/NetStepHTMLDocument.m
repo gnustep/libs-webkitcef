@@ -47,4 +47,9 @@
   return YES;
 }
 
+- (void) setURL: (NSURL *)url
+{
+  ASSIGN(_url, url);
+}
+
 @end
