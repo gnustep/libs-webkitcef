@@ -47,7 +47,8 @@ Resources/netstep_icon.png
 NetStep_HEADER_FILES = \
 AppController.h \
 NetStepHTMLDocument.h \
-NetStepWindowController.h
+NetStepWindowController.h \
+NetStepDocumentController.h
 
 #
 # Objective-C Class files
@@ -55,7 +56,8 @@ NetStepWindowController.h
 NetStep_OBJC_FILES = \
 AppController.m \
 NetStepHTMLDocument.m \
-NetStepWindowController.m
+NetStepWindowController.m \
+NetStepDocumentController.m
 
 #
 # Other sources

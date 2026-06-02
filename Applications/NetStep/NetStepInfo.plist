@@ -20,7 +20,7 @@
 		NSName = "NetStepHTMLDocument";
 		NSHumanReadableName = "HTML Document";
 		NSUnixExtensions = ("html", "htm", "xml");
-		NSRole = Viewer;
+		NSRole = Editor;
 		NSIcon = "netstep_icon.png";
 		NSDocumentClass = NetStepHTMLDocument;
     	}

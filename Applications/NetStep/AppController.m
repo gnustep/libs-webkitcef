@@ -70,34 +70,13 @@
   return YES;
 }
 
+- (BOOL) applicationShouldOpenUntitledFile: (NSApplication *)app
+{
+  return NO;
+}
+
 - (void) applicationWillTerminate: (NSNotification *)aNotif
 {
 }
 
-/*
-- (BOOL) application: (NSApplication *)application
-	    openFile: (NSString *)fileName
-{
-  BOOL result = NO;
-  NSLog(@"Opening file %@", fileName);
-  if ([fileName hasPrefix: @"http"])
-    {
-      NSLog(@"Opening as a web page");
-      [_webView loadURL: fileName];
-      [self updateURLFieldFromWebView];
-      result = YES;
-    }
-  else
-    {
-      NSLog(@"Opening as a file");
-      NSString *path = [[NSURL fileURLWithPath: fileName] absoluteString];
-      [_webView loadURL: path];
-      [self updateURLFieldFromWebView];
-      result = YES;
-    }
-  return result;
-}
-*/
-
 @end
-
