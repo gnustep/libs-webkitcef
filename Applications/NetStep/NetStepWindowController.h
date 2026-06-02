@@ -42,7 +42,7 @@ GS_EXPORT_CLASS
   IBOutlet WebView     *_webView;
 
   IBOutlet NSButton    *_backButton;
-  IBOutlet NSButton    *_fwdButton;
+  IBOutlet NSButton    *_forwardButton;
   IBOutlet NSButton    *_stopButton;
   IBOutlet NSButton    *_reloadButton;
 
@@ -54,7 +54,7 @@ GS_EXPORT_CLASS
 - (NSString *) normalizedURLStringFromString: (NSString *)urlString;
 - (void) setURL: (NSURL *)url;
   
-- (IBAction) foward: (id)sender;
+- (IBAction) forward: (id)sender;
 - (IBAction) back: (id)sender;
 - (IBAction) reload: (id)sender;
 - (IBAction) stop: (id)sender;
@@ -69,4 +69,3 @@ GS_EXPORT_CLASS
 #endif
 
 #endif	/* _NetStepWindowController_h_INCLUDE */
-

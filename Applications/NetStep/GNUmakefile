@@ -39,7 +39,15 @@ NetStep_APPLICATION_ICON = netstep_icon.png
 NetStep_RESOURCE_FILES = \
 Resources/NetStep.gorm \
 Resources/NetStepWindowController.gorm \
-Resources/netstep_icon.png
+Resources/netstep_icon.png \
+Resources/HTML_icon.png \
+Resources/html_icon.png \
+Resources/htm_icon.png \
+Resources/xml_icon.png \
+Resources/back_icon.png \
+Resources/forward_icon.png \
+Resources/reload_icon.png \
+Resources/stop_icon.png
 
 #
 # Header files

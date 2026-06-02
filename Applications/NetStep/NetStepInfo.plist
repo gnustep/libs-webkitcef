@@ -17,11 +17,35 @@
     NSIcon = "netstep_icon.png";
     NSTypes = (
         {
+		NSName = "NetStepUppercaseHTMLDocument";
+		NSHumanReadableName = "HTML Document";
+		NSUnixExtensions = ("HTML");
+		NSRole = Editor;
+		NSIcon = "HTML_icon.png";
+		NSDocumentClass = NetStepHTMLDocument;
+    	},
+        {
 		NSName = "NetStepHTMLDocument";
 		NSHumanReadableName = "HTML Document";
-		NSUnixExtensions = ("html", "htm", "xml");
+		NSUnixExtensions = ("html");
 		NSRole = Editor;
-		NSIcon = "netstep_icon.png";
+		NSIcon = "html_icon.png";
+		NSDocumentClass = NetStepHTMLDocument;
+    	},
+        {
+		NSName = "NetStepHTMDocument";
+		NSHumanReadableName = "HTM Document";
+		NSUnixExtensions = ("htm");
+		NSRole = Editor;
+		NSIcon = "htm_icon.png";
+		NSDocumentClass = NetStepHTMLDocument;
+    	},
+        {
+		NSName = "NetStepXMLDocument";
+		NSHumanReadableName = "XML Document";
+		NSUnixExtensions = ("xml");
+		NSRole = Editor;
+		NSIcon = "xml_icon.png";
 		NSDocumentClass = NetStepHTMLDocument;
     	}
     );

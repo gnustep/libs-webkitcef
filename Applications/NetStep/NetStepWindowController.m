@@ -35,7 +35,7 @@
   return self;
 }
 
-- (IBAction) foward: (id)sender
+- (IBAction) forward: (id)sender
 {
   [_webView goForward];
 }
@@ -132,6 +132,11 @@
 {
   NSString *urlString = nil;
 
+  [_backButton setImage: [NSImage imageNamed: @"back_icon.png"]];
+  [_forwardButton setImage: [NSImage imageNamed: @"forward_icon.png"]];
+  [_reloadButton setImage: [NSImage imageNamed: @"reload_icon.png"]];
+  [_stopButton setImage: [NSImage imageNamed: @"stop_icon.png"]];
+
   if (_url != nil)
     {
       urlString = [_url absoluteString];
@@ -142,4 +147,3 @@
 }
 
 @end
-
