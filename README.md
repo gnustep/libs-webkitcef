@@ -5,12 +5,12 @@ Chromium Embedded Framework (CEF). It provides a `WebView` Objective-C API for
 loading web pages, navigating browser history, and evaluating JavaScript from
 GNUstep applications.
 
-The repository also includes a small `WebBrowser` demo application that uses the
+The repository also includes a small `NetStep` application that uses the
 framework.
 
 ## Screenshot
 
-This is a test browser running on Linux using GNUstep...
+This is an early version of the WebBrowser demo (replaced by NetStep) running on Linux using GNUstep...
 
 <img width="906" height="705" alt="webpage_demo" src="https://github.com/user-attachments/assets/e38b0241-555c-4b08-9f2c-6b3e0b68f7f6" />
 
