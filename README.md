@@ -25,6 +25,8 @@ Showing GNUstep
 - `Applications/WebBrowser/` - sample GNUstep application using `WebView`.
 - `WebKit/Documentation/` - detailed notes about the build, CEF integration,
   linker fixes, and application setup.
+- `build.sh` - one-command build script that fetches/builds CEF, then builds
+  the framework and applications.
 - `WebKit/bin/download_cef.sh` - fetches and builds the CEF sample project used
   by this framework.
 - `WebKit/bin/install_cef_libs.sh` - installs built CEF libraries into
@@ -60,11 +62,14 @@ Set `GNUSTEP_MAKEFILES` if it is not already available in your environment:
 export GNUSTEP_MAKEFILES="$(gnustep-config --variable=GNUSTEP_MAKEFILES)"
 ```
 
-Build the framework and demo application:
+Build CEF, the framework, and the demo application:
 
 ```sh
-make
+./build.sh
 ```
+
+Use `./build.sh --skip-cef` to rebuild only this repository after CEF has
+already been prepared.
 
 Build only the framework:
 
@@ -89,11 +94,11 @@ make install
 
 ## CEF Setup
 
-Download and build CEF from the `WebKit` directory:
+The top-level script downloads `cef-project` from GitHub and builds the CEF
+artifacts expected by the GNUstep makefiles:
 
 ```sh
-cd WebKit
-./bin/download_cef.sh
+./build.sh
 ```
 
 The build system looks for CEF under:
@@ -105,9 +110,14 @@ WebKit/cef_build/cef-project
 After CEF is available, rebuild the framework:
 
 ```sh
-cd WebKit
-make clean
-make
+./build.sh --skip-cef --clean
+```
+
+The lower-level compatibility entry points still work:
+
+```sh
+WebKit/bin/download_cef.sh
+WebKit/bin/build.sh
 ```
 
 If applications cannot locate the CEF shared libraries at runtime, source the

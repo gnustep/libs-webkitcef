@@ -14,7 +14,7 @@ if [ -z "$CEF_BINARY_PATH" ]; then
 fi
 
 CEF_LIB_DIR="$CEF_BINARY_PATH/Release"
-CEF_DLL_WRAPPER_DIR="$CEF_PATH/build/libcef_dll_wrapper/Release"
+CEF_DLL_WRAPPER_DIR="$CEF_PATH/build/libcef_dll_wrapper"
 
 if [ ! -d "$CEF_LIB_DIR" ]; then
     echo "ERROR: CEF libraries not built at $CEF_LIB_DIR"
@@ -40,14 +40,10 @@ for lib in libcef.so libcef_dll_wrapper.a libEGL.so libGLESv2.so libvk_swiftshad
 done
 
 # Also copy from dll_wrapper directory
-if [ -d "$CEF_DLL_WRAPPER_DIR" ]; then
-    for lib in libcef_dll_wrapper.a; do
-        if [ -f "$CEF_DLL_WRAPPER_DIR/$lib" ]; then
-            echo "  Installing $lib (dll_wrapper)..."
-            sudo cp "$CEF_DLL_WRAPPER_DIR/$lib" /usr/local/lib/
-            sudo chmod 644 "/usr/local/lib/$lib"
-        fi
-    done
+if [ -f "$CEF_DLL_WRAPPER_DIR/libcef_dll_wrapper.a" ]; then
+    echo "  Installing libcef_dll_wrapper.a (dll_wrapper)..."
+    sudo cp "$CEF_DLL_WRAPPER_DIR/libcef_dll_wrapper.a" /usr/local/lib/
+    sudo chmod 644 "/usr/local/lib/libcef_dll_wrapper.a"
 fi
 
 # Update library cache

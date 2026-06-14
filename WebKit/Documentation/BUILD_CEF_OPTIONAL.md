@@ -17,42 +17,46 @@ Use this guide to enable full mode.
 
 ## 1) Download and Prepare CEF
 
-From the `WebKit` directory:
+From the repository root:
 
 ```sh
-cd /Volumes/heron/Development/libs-webkitcef/WebKit
-./bin/download_cef.sh
+./build.sh
 ```
 
 What this script does:
 
-- creates `cef_build/`
-- clones `cef-project`
-- configures CMake in `cef_build/cef-project/build`
+- creates `WebKit/cef_build/`
+- clones `cef-project` from GitHub
+- configures CMake in `WebKit/cef_build/cef-project/build`
 - builds `cefsimple` to fetch and unpack CEF binaries and produce initial artifacts
+- builds the WebKit framework and applications
+
+To prepare only CEF, run:
+
+```sh
+WebKit/bin/download_cef.sh
+```
 
 ## 2) Build CEF Libraries
 
 If you want full runtime support, build the CEF project artifacts in Release mode:
 
 ```sh
-cd /Volumes/heron/Development/libs-webkitcef/WebKit/cef_build/cef-project/build
+cd WebKit/cef_build/cef-project/build
 cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release ..
 make -j4
 ```
 
 Expected key output locations:
 
-- `cef_build/cef-project/third_party/cef/cef_binary_*/include`
-- `cef_build/cef-project/third_party/cef/cef_binary_*/Release/libcef.so`
-- `cef_build/cef-project/build/libcef_dll_wrapper/Release/`
+- `WebKit/cef_build/cef-project/third_party/cef/cef_binary_*/include`
+- `WebKit/cef_build/cef-project/third_party/cef/cef_binary_*/Release/libcef.so`
+- `WebKit/cef_build/cef-project/build/libcef_dll_wrapper/`
 
 ## 3) Rebuild the Framework with CEF Enabled
 
 ```sh
-cd /Volumes/heron/Development/libs-webkitcef/WebKit
-make clean
-make
+./build.sh --skip-cef --clean
 ```
 
 The makefiles auto-detect CEF headers/libraries and switch from stub mode to
@@ -63,15 +67,13 @@ full CEF mode.
 Option A (session-local):
 
 ```sh
-cd /Volumes/heron/Development/libs-webkitcef/WebKit
-source ./webkit-env.sh
+source WebKit/webkit-env.sh
 ```
 
 Option B (system install):
 
 ```sh
-cd /Volumes/heron/Development/libs-webkitcef/WebKit
-./bin/install_cef_libs.sh
+WebKit/bin/install_cef_libs.sh
 ```
 
 ## 5) Verify Your Build Mode
@@ -87,16 +89,15 @@ browser functionality.
 Run the download step again:
 
 ```sh
-cd /Volumes/heron/Development/libs-webkitcef/WebKit
-./bin/download_cef.sh
+WebKit/bin/download_cef.sh
 ```
 
 ### Framework builds but app cannot load `libcef.so`
 
 Use one of:
 
-- `source ./webkit-env.sh`
-- `./bin/install_cef_libs.sh`
+- `source WebKit/webkit-env.sh`
+- `WebKit/bin/install_cef_libs.sh`
 
 ### Build is too slow
 
