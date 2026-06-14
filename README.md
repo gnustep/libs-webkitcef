@@ -103,11 +103,18 @@ make install
 
 ## CEF Setup
 
-The top-level script downloads `cef-project` from GitHub and builds the CEF
-artifacts expected by the GNUstep makefiles:
+The top-level script downloads `cef-project` from GitHub, checks out pinned
+commit `3aec7049cf63a36876d7a6ef538842d6af314482`, and builds the CEF artifacts
+expected by the GNUstep makefiles:
 
 ```sh
 ./build.sh
+```
+
+To test another `cef-project` release or commit, override the pin for that run:
+
+```sh
+CEF_PROJECT_REF=<tag-or-commit> ./build.sh
 ```
 
 The build system looks for CEF under:

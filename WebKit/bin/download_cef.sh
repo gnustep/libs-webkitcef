@@ -93,6 +93,8 @@ WORKDIR="${CEF_WORKDIR:-$WEBKIT_DIR/cef_build}"
 PROJECT_DIR="$WORKDIR/cef-project"
 BUILD_DIR="$PROJECT_DIR/build"
 REPO_URL="${CEF_PROJECT_REPO:-https://github.com/chromiumembedded/cef-project.git}"
+PINNED_CEF_PROJECT_REF="3aec7049cf63a36876d7a6ef538842d6af314482"
+PROJECT_REF="${CEF_PROJECT_REF:-$PINNED_CEF_PROJECT_REF}"
 BUILD_TYPE="${CEF_BUILD_TYPE:-Release}"
 JOBS="${JOBS:-$(getconf _NPROCESSORS_ONLN 2>/dev/null || echo 4)}"
 
@@ -102,9 +104,11 @@ if [ -d "$PROJECT_DIR/.git" ]; then
     echo "Updating cef-project from $REPO_URL..."
     git -C "$PROJECT_DIR" remote set-url origin "$REPO_URL"
     if git -C "$PROJECT_DIR" diff --quiet && git -C "$PROJECT_DIR" diff --cached --quiet; then
-        git -C "$PROJECT_DIR" pull --ff-only
+        git -C "$PROJECT_DIR" fetch --tags origin
+        git -C "$PROJECT_DIR" checkout --detach "$PROJECT_REF"
     else
         echo "cef-project has local changes; leaving checkout as-is after updating origin URL."
+        echo "Requested cef-project ref: $PROJECT_REF"
     fi
 elif [ -e "$PROJECT_DIR" ]; then
     echo "ERROR: $PROJECT_DIR exists but is not a git checkout." >&2
@@ -112,15 +116,17 @@ elif [ -e "$PROJECT_DIR" ]; then
 else
     echo "Cloning cef-project from $REPO_URL..."
     git clone "$REPO_URL" "$PROJECT_DIR"
+    git -C "$PROJECT_DIR" checkout --detach "$PROJECT_REF"
 fi
 
 prefetch_clang_format
+ACTIVE_PROJECT_REF="$(git -C "$PROJECT_DIR" rev-parse HEAD)"
 
-# Configure CMake to fetch the latest CEF binary and build sample
+# Configure CMake to fetch the selected CEF binary and build sample
 cmake -S "$PROJECT_DIR" -B "$BUILD_DIR" -G "Unix Makefiles" -DCMAKE_BUILD_TYPE="$BUILD_TYPE"
 cmake --build "$BUILD_DIR" --target cefsimple --parallel "$JOBS"
 
-echo "Downloaded and unpacked latest CEF binaries."
+echo "Downloaded and unpacked CEF binaries from cef-project ref $ACTIVE_PROJECT_REF."
 echo "Build output in: $BUILD_DIR"
 
 exit 0

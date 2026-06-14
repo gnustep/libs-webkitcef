@@ -27,6 +27,7 @@ What this script does:
 
 - creates `WebKit/cef_build/`
 - clones `cef-project` from GitHub
+- checks out pinned `cef-project` commit `3aec7049cf63a36876d7a6ef538842d6af314482`
 - configures CMake in `WebKit/cef_build/cef-project/build`
 - builds `cefsimple` to fetch and unpack CEF binaries and produce initial artifacts
 - builds the WebKit framework and applications
@@ -35,6 +36,13 @@ To prepare only CEF, run:
 
 ```sh
 WebKit/bin/download_cef.sh
+```
+
+To test a different `cef-project` release or commit without changing the
+default pin, set `CEF_PROJECT_REF`:
+
+```sh
+CEF_PROJECT_REF=<tag-or-commit> WebKit/bin/download_cef.sh
 ```
 
 ## 2) Build CEF Libraries
