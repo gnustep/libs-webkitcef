@@ -377,8 +377,9 @@ extern "C" int WebKitCEFHandleProcess(int argc, const char **argv) {
   int i;
 
   for (i = 1; i < argc; i++) {
-    if (strncmp(argv[i], "--type=", 7) == 0) {
-      return WebKitCEFExecuteProcess(argc, argv);
+    if (strncmp(argv[i], "--type", 6) == 0) {
+      int exitCode = WebKitCEFExecuteProcess(argc, argv);
+      return exitCode >= 0 ? exitCode : 1;
     }
   }
 
@@ -410,26 +411,66 @@ std::string GetCachePath() {
   return [cachePath UTF8String];
 }
 
+std::string GetCEFResourcePath();
+
 std::string GetCEFPath() {
-  // Look for CEF framework in the main bundle's Frameworks directory
-  NSString *frameworkPath = [[NSBundle mainBundle] 
-    pathForResource:@"cef" ofType:@"framework"];
-  
-  if (!frameworkPath) {
-    // Fall back to standard framework location
-    frameworkPath = @"/Library/Frameworks/cef.framework";
+  return GetCEFResourcePath();
+}
+
+static BOOL GSPathHasCEFRuntime(NSString *path) {
+  NSFileManager *fileManager = [NSFileManager defaultManager];
+  BOOL isDirectory = NO;
+
+  if (![fileManager fileExistsAtPath: path isDirectory: &isDirectory] ||
+      !isDirectory) {
+    return NO;
   }
-  
-  NSLog(@"CEF Framework path: %@", frameworkPath);
-  return [frameworkPath UTF8String];
+
+  return [fileManager fileExistsAtPath:
+            [path stringByAppendingPathComponent: @"icudtl.dat"]] &&
+         [fileManager fileExistsAtPath:
+            [path stringByAppendingPathComponent: @"v8_context_snapshot.bin"]] &&
+         [fileManager fileExistsAtPath:
+            [path stringByAppendingPathComponent: @"resources.pak"]];
 }
 
 std::string GetCEFResourcePath() {
+  NSMutableArray *candidates = [NSMutableArray array];
+  NSBundle *webkitBundle = [NSBundle bundleForClass: [WebView class]];
+  NSString *webkitResourcePath = [webkitBundle resourcePath];
+  NSString *mainResourcePath = [[NSBundle mainBundle] resourcePath];
+
+  if (webkitResourcePath) {
+    [candidates addObject:
+      [webkitResourcePath stringByAppendingPathComponent: @"CEF"]];
+  }
+
+  if (mainResourcePath) {
+    [candidates addObject:
+      [mainResourcePath stringByAppendingPathComponent: @"CEF"]];
+  }
+
 #ifdef WEBKIT_CEF_BINARY_PATH
-  return std::string(WEBKIT_CEF_BINARY_PATH) + "/Resources";
-#else
-  return GetCEFPath();
+  [candidates addObject:
+    [[NSString stringWithUTF8String: WEBKIT_CEF_BINARY_PATH]
+      stringByAppendingPathComponent: @"Release"]];
+  [candidates addObject:
+    [[NSString stringWithUTF8String: WEBKIT_CEF_BINARY_PATH]
+      stringByAppendingPathComponent: @"Resources"]];
 #endif
+
+  for (NSString *candidate in candidates) {
+    if (GSPathHasCEFRuntime(candidate)) {
+      NSLog(@"CEF runtime path: %@", candidate);
+      return [candidate UTF8String];
+    }
+  }
+
+  NSString *fallback = [candidates count] > 0
+    ? [candidates objectAtIndex: 0]
+    : @"/usr/local/lib";
+  NSLog(@"CEF runtime path not found; falling back to %@", fallback);
+  return [fallback UTF8String];
 }
 
 std::string GetCEFLocalesPath() {

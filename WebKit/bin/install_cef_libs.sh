@@ -30,12 +30,14 @@ echo "Installing CEF libraries to /usr/local/lib..."
 # Create destination directory
 sudo mkdir -p /usr/local/lib
 
-# Copy CEF libraries
-for lib in libcef.so libcef_dll_wrapper.a libEGL.so libGLESv2.so libvk_swiftshader.so libcef.so.so; do
-    if [ -f "$CEF_LIB_DIR/$lib" ]; then
-        echo "  Installing $lib..."
-        sudo cp "$CEF_LIB_DIR/$lib" /usr/local/lib/
-        sudo chmod 644 "/usr/local/lib/$lib"
+# Copy the full CEF runtime. Linux CEF expects icudtl.dat and other runtime
+# files beside the loaded libcef.so, not just in CefSettings.resources_dir_path.
+echo "  Installing CEF runtime..."
+sudo cp -a "$CEF_LIB_DIR/." /usr/local/lib/
+
+for lib in "$CEF_LIB_DIR"/*.so*; do
+    if [ -f "$lib" ]; then
+        sudo chmod 755 "/usr/local/lib/$(basename "$lib")"
     fi
 done
 

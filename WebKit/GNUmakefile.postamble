@@ -30,6 +30,9 @@ after-install::
 		if [ -d "$$CEF_LIB_DIR" ]; then \
 			echo "  Found CEF libraries at $$CEF_LIB_DIR"; \
 			mkdir -p "$(FRAMEWORK_INSTALL_DIR)/WebKit.framework/Versions/Current/Libraries"; \
+			mkdir -p "$(FRAMEWORK_INSTALL_DIR)/WebKit.framework/Versions/Current/Resources/CEF"; \
+			echo "  Copying CEF runtime resources to framework..."; \
+			cp -a "$$CEF_LIB_DIR/." "$(FRAMEWORK_INSTALL_DIR)/WebKit.framework/Versions/Current/Resources/CEF/"; \
 			echo "  Copying CEF libraries to framework..."; \
 			for lib in $$CEF_LIB_DIR/*.so* $$CEF_LIB_DIR/*.a; do \
 				if [ -f "$$lib" ]; then \
@@ -39,6 +42,7 @@ after-install::
 			done; \
 			echo "  Copying CEF shared libraries beside installed WebKit library..."; \
 			mkdir -p "$(GNUSTEP_LIBRARIES)"; \
+			cp -a "$$CEF_LIB_DIR/." "$(GNUSTEP_LIBRARIES)/"; \
 			for lib in $$CEF_LIB_DIR/*.so*; do \
 				if [ -f "$$lib" ]; then \
 					echo "    Libraries: $$(basename $$lib)"; \
@@ -56,6 +60,7 @@ after-install::
 			fi; \
 			echo "  Installing CEF libraries to /usr/local/lib..."; \
 			mkdir -p /usr/local/lib; \
+			cp -a "$$CEF_LIB_DIR/." /usr/local/lib/; \
 			for lib in $$CEF_LIB_DIR/*.so*; do \
 				if [ -f "$$lib" ]; then \
 					echo "    System: $$(basename $$lib)"; \
