@@ -71,6 +71,15 @@ Build CEF, the framework, and the demo application:
 Use `./build.sh --skip-cef` to rebuild only this repository after CEF has
 already been prepared.
 
+Install the built framework and applications into the GNUstep SYSTEM domain:
+
+```sh
+./build.sh --install
+```
+
+If the repository has not been built yet, `--install` builds it first and then
+prompts for root privileges through `sudo` when needed.
+
 Build only the framework:
 
 ```sh
