@@ -45,7 +45,7 @@ ifneq ($(wildcard $(CEF_LIB_DIR)/libcef.so),)
   ADDITIONAL_LDFLAGS += -Wl,--whole-archive $(CEF_DLL_WRAPPER_DIR)/libcef_dll_wrapper.a -Wl,--no-whole-archive
   ADDITIONAL_LDFLAGS += -Wl,--no-as-needed $(CEF_LIB_DIR)/libcef.so
   # Export library paths so apps can find them
-  ADDITIONAL_LDFLAGS += -Wl,-rpath,$(CEF_LIB_DIR):$(CEF_DLL_WRAPPER_DIR)
+  ADDITIONAL_LDFLAGS += -Wl,-rpath,'$$ORIGIN':$(CEF_LIB_DIR):$(CEF_DLL_WRAPPER_DIR)
   ADDITIONAL_GUI_LIBS += -lX11
 else
   # CEF not built yet - header-only compilation

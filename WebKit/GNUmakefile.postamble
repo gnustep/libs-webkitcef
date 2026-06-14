@@ -37,6 +37,15 @@ after-install::
 					cp -f "$$lib" "$(FRAMEWORK_INSTALL_DIR)/WebKit.framework/Versions/Current/Libraries/"; \
 				fi; \
 			done; \
+			echo "  Copying CEF shared libraries beside installed WebKit library..."; \
+			mkdir -p "$(GNUSTEP_LIBRARIES)"; \
+			for lib in $$CEF_LIB_DIR/*.so*; do \
+				if [ -f "$$lib" ]; then \
+					echo "    Libraries: $$(basename $$lib)"; \
+					cp -f "$$lib" "$(GNUSTEP_LIBRARIES)/"; \
+					chmod 755 "$(GNUSTEP_LIBRARIES)/$$(basename $$lib)"; \
+				fi; \
+			done; \
 			if [ -d "$$CEF_DLL_WRAPPER_DIR" ]; then \
 				for lib in $$CEF_DLL_WRAPPER_DIR/*.a; do \
 					if [ -f "$$lib" ]; then \
