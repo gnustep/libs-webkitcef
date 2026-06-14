@@ -207,6 +207,7 @@ class CefCommand {};
 class CefCommandLine {
  public:
   void AppendSwitch(const CefString& name) {}
+  void AppendSwitchWithValue(const CefString& name, const CefString& value) {}
 };
 class CefDictionaryValue {};
 class CefRequestContext {};

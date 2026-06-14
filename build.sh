@@ -62,6 +62,8 @@ build_repo() {
         "$WEBKIT_DIR/bin/download_cef.sh"
     fi
 
+    "$WEBKIT_DIR/bin/patch_cef_headers.sh"
+
     if [ "$CLEAN" -eq 1 ]; then
         make -C "$ROOT_DIR" clean "${MAKE_ARGS[@]}"
     fi

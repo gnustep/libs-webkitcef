@@ -65,6 +65,29 @@ static int g_browser_count = 0;
 static NSTimer *g_cef_message_loop_timer = nil;
 #if defined(HAVE_CEF) && defined(__linux__)
 static Display *g_x_display = NULL;
+static bool g_x_error_handlers_installed = false;
+
+static int GSCEFHandleXError(Display *display, XErrorEvent *event) {
+  NSLog(@"CEF X error: type %d serial %lu error %d request %d minor %d",
+        event->type,
+        event->serial,
+        (int)event->error_code,
+        (int)event->request_code,
+        (int)event->minor_code);
+  return 0;
+}
+
+static int GSCEFHandleXIOError(Display *display) {
+  return 0;
+}
+
+static void GSCEFInstallXErrorHandlers(void) {
+  if (!g_x_error_handlers_installed) {
+    XSetErrorHandler(GSCEFHandleXError);
+    XSetIOErrorHandler(GSCEFHandleXIOError);
+    g_x_error_handlers_installed = true;
+  }
+}
 #endif
 
 // Custom V8 handler for JavaScript to native callbacks
@@ -316,6 +339,10 @@ class GSCefApp : public CefApp, public CefBrowserProcessHandler {
     command_line->AppendSwitch("disable-gpu");
     command_line->AppendSwitch("disable-gpu-compositing");
     command_line->AppendSwitch("no-sandbox");
+#if defined(__linux__)
+    command_line->AppendSwitchWithValue("change-stack-guard-on-fork",
+                                        "disable");
+#endif
   }
 
   CefRefPtr<CefBrowserProcessHandler> GetBrowserProcessHandler() override {
@@ -438,6 +465,10 @@ CefMainArgs GetMainArgsFromNSProcessInfo() {
 
 static void InitializeCEFIfNeeded(void) {
   if (!g_cef_initialized) {
+#if defined(HAVE_CEF) && defined(__linux__)
+    GSCEFInstallXErrorHandlers();
+#endif
+
     CefMainArgs main_args = GetMainArgsFromNSProcessInfo();
     CefSettings settings;
 
