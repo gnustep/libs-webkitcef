@@ -58,6 +58,7 @@
 
 NSString *WebViewURLDidChangeNotification = @"WebViewURLDidChangeNotification";
 NSString *WebViewURLKey = @"WebViewURL";
+NSString *WebActionOriginalURLRequestKey = @"WebActionOriginalURLRequestKey";
 
 // Global CEF state
 static bool g_cef_initialized = false;
@@ -138,7 +139,13 @@ class GSCefClient : public CefClient,
   // CefDisplayHandler methods
   void OnTitleChange(CefRefPtr<CefBrowser> browser,
                      const CefString& title) override {
-    // Update view if needed - title available from browser
+    if (web_view_) {
+      std::string utf8_title = title.ToString();
+      NSString* titleString = [NSString stringWithUTF8String:utf8_title.c_str()];
+      [web_view_ performSelectorOnMainThread: @selector(titleChanged:)
+                                  withObject: titleString
+                               waitUntilDone: NO];
+    }
   }
 
   void OnAddressChange(CefRefPtr<CefBrowser> browser,
@@ -547,10 +554,18 @@ static void InitializeCEFIfNeeded(void) {
   NSString* pageTitle_;
   NSString* pendingURL_;
   NSString* pendingHTML_;
+  id frameLoadDelegate_;
+  id resourceLoadDelegate_;
+  id UIDelegate_;
+  id policyDelegate_;
+  id currentResourceIdentifier_;
 }
 - (void)initializeBrowserIfNeeded;
 - (void)browserViewWasResized;
 - (NSRect)browserChildWindowRect;
+- (NSURLRequest *)requestAfterDelegateCallbacks:(NSURLRequest *)request;
+- (void)loadURLString:(NSString *)url invokeDelegates:(BOOL)invokeDelegates;
+- (void)titleChanged:(NSString *)title;
 @end
 
 @implementation WebView
@@ -565,8 +580,40 @@ static void InitializeCEFIfNeeded(void) {
   return [super allocWithZone: zone];
 }
 
-- (void)loadRequest: (NSURLRequest*)request {
+- (void)loadRequest: (NSURLRequest *)request {
   // Base implementation - overridden in GSWebView
+}
+
+- (void)setFrameLoadDelegate:(id)delegate {
+  // Base implementation - overridden in GSWebView
+}
+
+- (id)frameLoadDelegate {
+  return nil;
+}
+
+- (void)setResourceLoadDelegate:(id)delegate {
+  // Base implementation - overridden in GSWebView
+}
+
+- (id)resourceLoadDelegate {
+  return nil;
+}
+
+- (void)setUIDelegate:(id)delegate {
+  // Base implementation - overridden in GSWebView
+}
+
+- (id)UIDelegate {
+  return nil;
+}
+
+- (void)setPolicyDelegate:(id)delegate {
+  // Base implementation - overridden in GSWebView
+}
+
+- (id)policyDelegate {
+  return nil;
 }
 
 - (void)loadHTMLString: (NSString*)string baseURL: (NSURL*)baseURL {
@@ -639,6 +686,10 @@ static void InitializeCEFIfNeeded(void) {
   // Base implementation - overridden in GSWebView
 }
 
+- (void)titleChanged:(NSString *)title {
+  // Base implementation - overridden in GSWebView
+}
+
 @end
 
 @implementation GSWebView
@@ -666,8 +717,45 @@ static void InitializeCEFIfNeeded(void) {
     pageTitle_ = nil;
     pendingURL_ = nil;
     pendingHTML_ = nil;
+    frameLoadDelegate_ = nil;
+    resourceLoadDelegate_ = nil;
+    UIDelegate_ = nil;
+    policyDelegate_ = nil;
+    currentResourceIdentifier_ = nil;
   }
   return self;
+}
+
+- (void)setFrameLoadDelegate:(id)delegate {
+  frameLoadDelegate_ = delegate;
+}
+
+- (id)frameLoadDelegate {
+  return frameLoadDelegate_;
+}
+
+- (void)setResourceLoadDelegate:(id)delegate {
+  resourceLoadDelegate_ = delegate;
+}
+
+- (id)resourceLoadDelegate {
+  return resourceLoadDelegate_;
+}
+
+- (void)setUIDelegate:(id)delegate {
+  UIDelegate_ = delegate;
+}
+
+- (id)UIDelegate {
+  return UIDelegate_;
+}
+
+- (void)setPolicyDelegate:(id)delegate {
+  policyDelegate_ = delegate;
+}
+
+- (id)policyDelegate {
+  return policyDelegate_;
 }
 
 - (void)awakeFromNib {
@@ -756,17 +844,69 @@ static void InitializeCEFIfNeeded(void) {
   isLoading_ = YES;
   NSLog(@"Page loading started");
   [self urlChanged: [[self mainFrameURL] absoluteString]];
+
+  if (frameLoadDelegate_ &&
+      [frameLoadDelegate_ respondsToSelector:
+        @selector(webView:didStartProvisionalLoadForFrame:)]) {
+    [frameLoadDelegate_ webView: self
+ didStartProvisionalLoadForFrame: self];
+  }
+
+  if (frameLoadDelegate_ &&
+      [frameLoadDelegate_ respondsToSelector:
+        @selector(webView:didCommitLoadForFrame:)]) {
+    [frameLoadDelegate_ webView: self didCommitLoadForFrame: self];
+  }
 }
 
 - (void)loadingEnded {
   isLoading_ = NO;
   NSLog(@"Page loading ended");
   [self urlChanged: [[self mainFrameURL] absoluteString]];
+
+  if (frameLoadDelegate_ &&
+      [frameLoadDelegate_ respondsToSelector:
+        @selector(webView:didFinishLoadForFrame:)]) {
+    [frameLoadDelegate_ webView: self didFinishLoadForFrame: self];
+  }
+
+  if (resourceLoadDelegate_ &&
+      [resourceLoadDelegate_ respondsToSelector:
+        @selector(webView:resource:didFinishLoadingFromDataSource:)]) {
+    [resourceLoadDelegate_ webView: self
+                          resource: currentResourceIdentifier_
+    didFinishLoadingFromDataSource: nil];
+  }
 }
 
 - (void)loadingFailed:(NSString*)error {
   isLoading_ = NO;
+  NSDictionary *userInfo;
+  NSError *loadError;
+
   NSLog(@"Page loading failed: %@", error);
+
+  userInfo = [NSDictionary dictionaryWithObject: (error ? error : @"Load failed")
+                                         forKey: NSLocalizedDescriptionKey];
+  loadError = [NSError errorWithDomain: @"WebView"
+                                  code: -1
+                              userInfo: userInfo];
+
+  if (frameLoadDelegate_ &&
+      [frameLoadDelegate_ respondsToSelector:
+        @selector(webView:didFailLoadWithError:forFrame:)]) {
+    [frameLoadDelegate_ webView: self didFailLoadWithError: loadError
+                       forFrame: self];
+  }
+
+  if (resourceLoadDelegate_ &&
+      [resourceLoadDelegate_ respondsToSelector:
+        @selector(webView:resource:didFailLoadingWithError:fromDataSource:)]) {
+    [resourceLoadDelegate_ webView: self
+                          resource: currentResourceIdentifier_
+           didFailLoadingWithError: loadError
+                    fromDataSource: nil];
+  }
 }
 
 - (void)urlChanged:(NSString*)url {
@@ -779,6 +919,28 @@ static void InitializeCEFIfNeeded(void) {
   }
   currentURL_ = [url retain];
   [self postURLDidChangeNotification];
+
+  if (frameLoadDelegate_ &&
+      [frameLoadDelegate_ respondsToSelector:
+        @selector(webView:didChangeLocationWithinPageForFrame:)]) {
+    [frameLoadDelegate_ webView: self
+didChangeLocationWithinPageForFrame: self];
+  }
+}
+
+- (void)titleChanged:(NSString *)title {
+  if (pageTitle_) {
+    [pageTitle_ release];
+  }
+
+  pageTitle_ = [title retain];
+
+  if (frameLoadDelegate_ &&
+      [frameLoadDelegate_ respondsToSelector:
+        @selector(webView:didReceiveTitle:forFrame:)]) {
+    [frameLoadDelegate_ webView: self didReceiveTitle: title
+                       forFrame: self];
+  }
 }
 
 - (void)dealloc {
@@ -807,8 +969,68 @@ static void InitializeCEFIfNeeded(void) {
   if (pendingHTML_) {
     [pendingHTML_ release];
   }
+
+  if (currentResourceIdentifier_) {
+    [currentResourceIdentifier_ release];
+  }
   
   [super dealloc];
+}
+
+- (NSURLRequest *)requestAfterDelegateCallbacks:(NSURLRequest *)request {
+  NSURLRequest *effectiveRequest;
+  NSDictionary *actionInformation;
+
+  if (request == nil) {
+    return nil;
+  }
+
+  effectiveRequest = request;
+
+  if (policyDelegate_ &&
+      [policyDelegate_ respondsToSelector:
+        @selector(webView:decidePolicyForNavigationAction:request:frame:decisionListener:)]) {
+    actionInformation = [NSDictionary dictionaryWithObject: request
+                                                    forKey: WebActionOriginalURLRequestKey];
+    [policyDelegate_ webView: self
+decidePolicyForNavigationAction: actionInformation
+                     request: request
+                       frame: self
+            decisionListener: nil];
+  }
+
+  if (currentResourceIdentifier_) {
+    [currentResourceIdentifier_ release];
+    currentResourceIdentifier_ = nil;
+  }
+
+  if (resourceLoadDelegate_ &&
+      [resourceLoadDelegate_ respondsToSelector:
+        @selector(webView:identifierForInitialRequest:fromDataSource:)]) {
+    currentResourceIdentifier_ =
+      [[resourceLoadDelegate_ webView: self
+          identifierForInitialRequest: request
+                       fromDataSource: nil] retain];
+  }
+
+  if (resourceLoadDelegate_ &&
+      [resourceLoadDelegate_ respondsToSelector:
+        @selector(webView:resource:willSendRequest:redirectResponse:fromDataSource:)]) {
+    NSURLRequest *delegateRequest;
+
+    delegateRequest =
+      [resourceLoadDelegate_ webView: self
+                            resource: currentResourceIdentifier_
+                     willSendRequest: effectiveRequest
+                    redirectResponse: nil
+                      fromDataSource: nil];
+
+    if (delegateRequest) {
+      effectiveRequest = delegateRequest;
+    }
+  }
+
+  return effectiveRequest;
 }
 
 - (NSRect)browserChildWindowRect {
@@ -880,16 +1102,17 @@ static void InitializeCEFIfNeeded(void) {
   [self browserViewWasResized];
 }
 
-- (void)loadRequest:(NSURLRequest*)request {
-  [self initializeBrowserIfNeeded];
-
-  if (!browser_ || !isInitialized_) {
-    NSLog(@"Warning: Cannot load request - browser not initialized");
+- (void)loadRequest:(NSURLRequest *)request {
+  request = [self requestAfterDelegateCallbacks: request];
+  if (request == nil || [request URL] == nil) {
     return;
   }
-  
-  NSString* urlString = [[request URL] absoluteString];
-  [self loadURL:urlString];
+
+  [self loadURLString: [[request URL] absoluteString] invokeDelegates: NO];
+}
+
+- (void)loadURL:(NSString*)url {
+  [self loadURLString: url invokeDelegates: YES];
 }
 
 - (void)loadHTMLString:(NSString*)string baseURL:(NSURL*)baseURL {
@@ -924,8 +1147,24 @@ static void InitializeCEFIfNeeded(void) {
   }
 }
 
-- (void)loadURL:(NSString*)url {
+- (void)loadURLString:(NSString *)url invokeDelegates:(BOOL)invokeDelegates {
   BOOL wasInitialized = isInitialized_;
+  NSURL *URL;
+  NSURLRequest *request;
+
+  if (url == nil) {
+    return;
+  }
+
+  URL = invokeDelegates ? [NSURL URLWithString: url] : nil;
+  if (invokeDelegates && URL) {
+    request = [NSURLRequest requestWithURL: URL];
+    request = [self requestAfterDelegateCallbacks: request];
+    if (request == nil || [request URL] == nil) {
+      return;
+    }
+    url = [[request URL] absoluteString];
+  }
 
   if (pendingURL_) {
     [pendingURL_ release];

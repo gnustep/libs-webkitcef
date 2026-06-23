@@ -43,6 +43,72 @@
  */
 typedef void (*WebViewJavaScriptCompletionHandler)(NSString* result, NSError* error);
 
+@class WebView;
+
+/**
+ * Receives main-frame load lifecycle callbacks.
+ *
+ * The frame argument is currently the WebView instance until a WebFrame
+ * compatibility object is introduced.
+ */
+@protocol WebFrameLoadDelegate
+@optional
+- (void)webView:(WebView *)sender didStartProvisionalLoadForFrame:(id)frame;
+- (void)webView:(WebView *)sender didCommitLoadForFrame:(id)frame;
+- (void)webView:(WebView *)sender didFinishLoadForFrame:(id)frame;
+- (void)webView:(WebView *)sender didFailLoadWithError:(NSError *)error
+       forFrame:(id)frame;
+- (void)webView:(WebView *)sender didReceiveTitle:(NSString *)title
+       forFrame:(id)frame;
+- (void)webView:(WebView *)sender didChangeLocationWithinPageForFrame:(id)frame;
+@end
+
+/**
+ * Receives resource-load callbacks for navigations initiated through WebView.
+ *
+ * The dataSource argument is currently nil until a WebDataSource compatibility
+ * object is introduced.
+ */
+@protocol WebResourceLoadDelegate
+@optional
+- (id)webView:(WebView *)sender identifierForInitialRequest:(NSURLRequest *)request
+ fromDataSource:(id)dataSource;
+- (NSURLRequest *)webView:(WebView *)sender
+          resource:(id)identifier
+   willSendRequest:(NSURLRequest *)request
+  redirectResponse:(NSURLResponse *)redirectResponse
+    fromDataSource:(id)dataSource;
+- (void)webView:(WebView *)sender resource:(id)identifier
+ didFinishLoadingFromDataSource:(id)dataSource;
+- (void)webView:(WebView *)sender resource:(id)identifier
+ didFailLoadingWithError:(NSError *)error
+ fromDataSource:(id)dataSource;
+@end
+
+/**
+ * Receives UI-level callbacks.
+ */
+@protocol WebUIDelegate
+@optional
+- (void)webView:(WebView *)sender setStatusText:(NSString *)text;
+- (void)webViewClose:(WebView *)sender;
+@end
+
+/**
+ * Receives policy-decision callbacks for navigation.
+ *
+ * The listener argument is currently nil. Implementations should treat the
+ * absence of a listener as "use the default policy".
+ */
+@protocol WebPolicyDelegate
+@optional
+- (void)webView:(WebView *)webView
+ decidePolicyForNavigationAction:(NSDictionary *)actionInformation
+        request:(NSURLRequest *)request
+          frame:(id)frame
+decisionListener:(id)listener;
+@end
+
 /**
  * Notification posted whenever the main frame URL changes.
  *
@@ -60,6 +126,11 @@ extern NSString *WebViewURLDidChangeNotification;
 extern NSString *WebViewURLKey;
 
 /**
+ * Policy action dictionary key containing the original NSURLRequest.
+ */
+extern NSString *WebActionOriginalURLRequestKey;
+
+/**
  * AppKit view that embeds a Chromium-backed browser surface.
  *
  * WebView provides a GNUstep-compatible API for loading web content,
@@ -69,12 +140,36 @@ extern NSString *WebViewURLKey;
 @interface WebView : NSView
 
 /**
+ * Sets or returns the frame-load delegate. The delegate is not retained.
+ */
+- (void)setFrameLoadDelegate:(id)delegate;
+- (id)frameLoadDelegate;
+
+/**
+ * Sets or returns the resource-load delegate. The delegate is not retained.
+ */
+- (void)setResourceLoadDelegate:(id)delegate;
+- (id)resourceLoadDelegate;
+
+/**
+ * Sets or returns the UI delegate. The delegate is not retained.
+ */
+- (void)setUIDelegate:(id)delegate;
+- (id)UIDelegate;
+
+/**
+ * Sets or returns the policy delegate. The delegate is not retained.
+ */
+- (void)setPolicyDelegate:(id)delegate;
+- (id)policyDelegate;
+
+/**
  * Loads content from the URL contained in the request.
  *
  * This is the primary entry point when request metadata is already available.
  * The implementation extracts the request URL and navigates the main frame.
  */
-- (void)loadRequest:(NSURLRequest*)request;
+- (void)loadRequest:(NSURLRequest *)request;
 
 /**
  * Loads an HTML document string into the main frame.
